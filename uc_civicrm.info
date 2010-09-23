@@ -1,0 +1,8 @@
+; $Id$
+name = "Ubercart-CiviCRM Integration"
+description = Integrates Ubercart with CiviCRM.
+package = "Ubercart - extra"
+dependencies[] = "civicrm"
+dependencies[] = "uc_order"
+
+core = 6.x
