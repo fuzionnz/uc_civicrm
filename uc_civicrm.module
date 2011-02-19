@@ -497,21 +497,11 @@ function _uc_civicrm_add_update_contact($cid, $order) {
 } // function _uc_civicrm_add_update_contact()
 
 function _uc_civicrm_create_custom_contribution_fields() {
+  // Check to see if we've done this before
+  $groupId = variable_get('uc_civicrm_contribution_group_id', "NotFound");
+  if ($groupId != "NotFound") { return; }
+
   require_once 'CRM/Core/Config.php';
-  $config = CRM_Core_Config::singleton( );
-
-  $cividb = array_pop(explode('/', array_shift(explode('?', $config->dsn))));
-  $result = db_query("SELECT COUNT(*) AS count
-                       FROM information_schema.TABLES
-                       WHERE TABLE_NAME LIKE 'civicrm_value_ubercart_purchase%'
-                       AND information_schema.TABLES.TABLE_SCHEMA = '%s'", $cividb);
-  // Abort if the fields exist
-  while ($field = db_fetch_object($result)) {
-    if ($field->count >= 1) {
-      return;
-    }
-  }
-
   require_once 'api/v2/CustomGroup.php';
   // First we need to check if the Sales Tax and Shipping
   // custom fields have been created
@@ -643,11 +633,10 @@ function _uc_civicrm_create_detail_string($order) {
  *  Admin form configuration for this module
  */
 function uc_civicrm_admin() {
-  if (!module_exists('civicrm')) {
-    return;
-  }
-  civicrm_initialize();
+  if (!module_exists('civicrm')) { return; }
+  if (!civicrm_initialize()) { return; }
   require_once 'api/v2/Group.php';
+  require_once 'CRM/Core/Config.php';
   // Get all groups
   $params = array();
   $allGroups = civicrm_group_get($params);
@@ -657,15 +646,12 @@ function uc_civicrm_admin() {
     $options[$group['id']] = $group['title'];
   }
 
-  require_once 'CRM/Core/Config.php';
-  $config = CRM_Core_Config::singleton( );
   // Get contribution types
-  $cividb = array_pop(explode('/', array_shift(explode('?', $config->dsn))));
-  $result = db_query("SELECT * FROM %s.civicrm_contribution_type", $cividb);
-
+  $sql = "SELECT id, name FROM civicrm_contribution_type";
+  $dao =& CRM_Core_DAO::executeQuery($sql, array());
   $contTypes = array();
-  while ($field = db_fetch_array($result)) {
-    $contTypes[$field['id']] = $field['name'];
+  while ($dao->fetch()) {
+    $contTypes[$dao->id] = $dao->name;
   }
   array_unshift($contTypes, "Select a type...");
 
