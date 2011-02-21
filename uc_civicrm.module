@@ -10,8 +10,6 @@
  * Implementation of hook_help
  *
  * @param section
- *
- * @returns
  */
 function uc_civicrm_help($path = 'admin/help#uc_civicrm') {
   if (!module_exists('civicrm')) {
@@ -518,10 +516,13 @@ function _uc_civicrm_add_update_contact($cid, $order) {
   return $cid;
 } // function _uc_civicrm_add_update_contact()
 
+/**
+ * Creates required contribution fields if they have nto already been created
+ */
 function _uc_civicrm_create_custom_contribution_fields() {
-  // Check to see if we've done this before
-  $groupId = variable_get('uc_civicrm_contribution_group_id', "NotFound");
-  if ($groupId != "NotFound") { return; }
+  // Check to see if we've done this before, if so, return
+  $groupId = variable_get('uc_civicrm_contribution_group_id', false);
+  if ($groupId != false) { return; }
 
   require_once 'CRM/Core/Config.php';
   require_once 'api/v2/CustomGroup.php';
@@ -612,7 +613,7 @@ function _uc_civicrm_add_contribution($cid, &$order) {
     'receive_date' => date('Ymd'),
     'total_amount' => $roundedTotal,
     'contribution_type_id' => variable_get('uc_civicrm_contribution_type', ''), // @FIXME this needs a sensible default
-    'payment_instrument_id' => 1, // @FIXME Assumes the payment instrument id is 1 for credit card, is this right?
+    'payment_instrument_id' => _uc_civicrm_map_payment_instrument($order->payment_method),
     'non_deductible_amount' => 00.00,
     'fee_amount' => 00.00,
     'net_amount' => $roundedTotal,
@@ -636,8 +637,44 @@ function _uc_civicrm_add_contribution($cid, &$order) {
   }
 
   return true;
-} // _uc_civicrm_add_contribution()
+} // function _uc_civicrm_add_contribution()
 
+/**
+ * Maps an Ubercart payment method to a CiviCRM payment instrument
+ *
+ * @param string $paymentDevice
+ *    An Ubercart payment device
+ * @return int
+ *    The CiviCRM id of the payment processor
+ */
+function _uc_civicrm_map_payment_instrument($paymentDevice) {
+  // Note that the payment methods for Ubercart are hardcoded in
+  // the payment modules under hook_payment_method(), so I'm considering 
+  // anything that's not explicitly a check or cash to be a credit card.
+  $map = array(
+    "credit" => 1,
+    "cod"    => 3,
+    "check"  => 4,
+  );
+
+  if (array_key_exists($paymentDevice, $map)) {
+    $id = $map[$paymentDevice];
+  }
+  else {
+    $id = 1; // Another Ubercart payment method - good chance this is credit.
+  }
+
+  return $id;
+} // function _uc_civicrm_map_payment_instrument()
+
+/**
+ * Maps an Ubercart order status to a corresponding CiviCRM contribution status
+ *
+ * @param string $orderStatus
+ *    An Ubercart order status
+ * @return int
+ *    A CiviCRM order status
+ */
 function _uc_civicrm_map_contribution_status($orderStatus) {
   // NOTE: There may be a more "correct" way to do this.
   $map = array(
@@ -645,8 +682,8 @@ function _uc_civicrm_map_contribution_status($orderStatus) {
     "payment_received" => 1,
     "pending"          => 2,
     "processing"       => 5,
-    "canceled"        => 3,
-    "in_checkout"      => 5
+    "canceled"         => 3,
+    "in_checkout"      => 5,
   );
 
   if (array_key_exists($orderStatus, $map)) {
@@ -655,22 +692,31 @@ function _uc_civicrm_map_contribution_status($orderStatus) {
   else {
     $id = 1; // Oh no.
     watchdog('uc_civicrm', 'There is no status that maps to: '
-            . $orderStatus . ' Marking as "Complete"', array(), WATCHDOG_ERROR);
+            . $orderStatus . ' Marking as "Complete"', array(), WATCHDOG_WARNING);
   }
 
   return $id;
-}
+} // function _uc_civicrm_map_contribution_status()
 
+/**
+ * Syncronizes the status of an order from Ubercart to CiviCRM
+ *
+ * @param $order
+ *    Order
+ */
 function uc_civicrm_syncronize_status($order) {
   if (!module_exists('civicrm')) { return; }
-  civicrm_initialize( );
+  civicrm_initialize();
   require_once 'CRM/Core/Config.php';
-  $config =& CRM_Core_Config::singleton( );
+  $config =& CRM_Core_Config::singleton();
 
   require_once "api/v2/Contribute.php";
 
-  $invoiceId = $order->order_id;
-  $searchParams = array('invoice_id' => $invoiceId . "_uc");
+  $searchParams = array(
+    'invoice_id'        => $order->order_id . "_uc",
+    'return.contact_id' => 1,
+  );
+
   $result =& civicrm_contribution_search(&$searchParams);
 
   if (civicrm_error ($result)) {
@@ -681,20 +727,30 @@ function uc_civicrm_syncronize_status($order) {
     $contribution = array_shift($result);
 
     $setParams = array(
-      'id' => $contribution['contribution_id'],
+      'id'                     => $contribution['contribution_id'],
+      'contact_id'             => $contribution['contact_id'],
       'contribution_status_id' => _uc_civicrm_map_contribution_status($order->order_status),
     );
 
     $result =& civicrm_contribution_add(&$setParams);
 
+    // @TODO There is a very odd issue here, evidently the system works,
+    // but there are times when this fires before a contribution has been added
+    // so I'm commenting this error thrower out for now.
+    // It should be examined, though.
+    /*
     if (civicrm_error ($result)) {
       watchdog('uc_civicrm', 'uc_civicrm_syncronize_status( ) returned: '
-        . $result['error_message'], array(), WATCHDOG_ERROR);
+        . $result['error_message'] . ' on line ' . __LINE__, array(), WATCHDOG_ERROR);
     }
-  }
-}
+    */
 
-// Create string to insert for purchase activity details
+  }
+} // function uc_civicrm_syncronize_status()
+
+/**
+ * Create string to insert for purchase activity details
+ */
 function _uc_civicrm_create_detail_string($order) {
   $str = '';
   $n = 1;
