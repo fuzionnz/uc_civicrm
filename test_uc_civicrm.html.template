@@ -1,5 +1,4 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<!--  $Id$
       This is a script for Selenium used to verify the information stored
       into CiviCRM by Selenium script ../test_ubercart.html .
       For information about Selenium see
