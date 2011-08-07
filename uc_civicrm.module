@@ -780,13 +780,12 @@ function uc_civicrm_admin() {
   }
 
   // Get contribution types
-  $sql = "SELECT id, name FROM civicrm_contribution_type";
+  $sql = "SELECT id, name FROM civicrm_contribution_type WHERE is_active = 1";
   $dao =& CRM_Core_DAO::executeQuery($sql, array());
-  $contTypes = array();
+  $contTypes = array(0 => "Select a type...");
   while ($dao->fetch()) {
     $contTypes[$dao->id] = $dao->name;
   }
-  array_unshift($contTypes, "Select a type...");
 
   $form = array();
   $form['uc_civicrm_contribution_type'] = array(
