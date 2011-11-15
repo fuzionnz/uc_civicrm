@@ -3,5 +3,6 @@ description = Integrates Ubercart with CiviCRM.
 package = "Ubercart - extra"
 dependencies[] = "civicrm"
 dependencies[] = "uc_order"
+dependencies[] = "rules"
 
-core = 6.x
+core = 7.x
