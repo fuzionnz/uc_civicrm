@@ -511,47 +511,6 @@ function _uc_civicrm_map_contribution_status($orderStatus) {
 
 
 /**
- * Synchronizes the status of an order from Ubercart to CiviCRM
- *
- * @param $order
- *    Order
- */
-/*
-function uc_civicrm_synchronize_status($order) {
-  if (!module_exists('civicrm')) { return; }
-  if (!civicrm_initialize()) { return; }
-
-  require_once 'CRM/Core/Config.php';
-  require_once "api/v2/Contribute.php";
-  $config =& CRM_Core_Config::singleton();
-
-  $params = array('invoice_id' => $order->order_id . "_uc", 'return.contact_id' => 1,);
-  $result =& civicrm_contribution_search($params);
-  if (civicrm_error($result)) {
-    watchdog('uc_civicrm', 'uc_civicrm_synchronize_status(): '. $result['error_message'], array(), WATCHDOG_ERROR);
-  } else {
-    $contribution = array_shift($result);
-    $params = array(
-      'id' => $contribution['contribution_id'],
-      'contact_id' => $contribution['contact_id'],
-      'contribution_status_id' => _uc_civicrm_map_contribution_status($order->order_status),
-    );
-    $result =& civicrm_contribution_add($setParams);
-
-    // @TODO There is a very odd issue here, evidently the system works,
-    // but there are times when this fires before a contribution has been added
-    // so I'm commenting this error thrower out for now.
-    // It should be examined, though.
-    if (civicrm_error ($result)) {
-      watchdog('uc_civicrm', 'uc_civicrm_synchronize_status( ) returned: '
-        . $result['error_message'] . ' on line ' . __LINE__, array(), WATCHDOG_ERROR);
-    }
-  }
-}
-*/
-
-
-/**
  * Create string to insert for purchase activity details
  */
 function _uc_civicrm_create_detail_string($order) {
