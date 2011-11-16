@@ -1,26 +1,34 @@
 <?php
 
 /**
- * Alters the Ubercart order status update hook to run the 
- * syncing functions.
+ * @file
+ * This file contains the Rules hooks and functions necessary to make the order
+ * related entity, conditions, events, and actions work.
  */
-function uc_civicrm_rules_action_info_alter(&$actions) {
-  $order_arg = array(
-    'type' => 'uc_order',
-    'label' => t('Order'),
-  );
 
-  $actions['uc_order_update_status'] = array(
-    'label' => t('Update the order status and sync with CiviCRM'),
+/**
+ * Implements hook_rules_action_info().
+ */
+function uc_civicrm_rules_action_info() {
+  $actions['uc_civicrm_create_order_civicrm'] = array(
+    'label' => t('Add and update CiviCRM contact record'),
     'group' => t('Order'),
-    'base' => 'uc_civicrm_syncronize_status',
+    'base' => 'uc_civicrm_action_order_civicrm',
     'parameter' => array(
-      'order' => $order_arg,
-      'order_status' => array(
-        'type' => 'text',
-        'label' => t('Status'),
-        'options list' => 'uc_order_action_update_status_options',
-      ),
+        'order' => array('type' => 'uc_order', 'label' => t('Order')),
+        'is_new' => array('type' => 'boolean', 'label' => t('Is new?'))
     ),
   );
+
+  $actions['uc_civicrm_update_order_civicrm'] = array(
+    'label' => t('Update CiviCRM contact record'),
+    'group' => t('Order'),
+    'base' => 'uc_civicrm_action_order_civicrm',
+    'parameter' => array(
+        'order' => array('type' => 'uc_order', 'label' => t('Order'),),
+        'is_new' => array('type' => 'boolean', 'label' => t('Is new?'))
+    ),
+  );
+
+  return $actions;
 }
