@@ -12,7 +12,6 @@
 function uc_civicrm_rules_action_info() {
   $actions['uc_civicrm_create_order_civicrm'] = array(
     'label' => t('Add and update CiviCRM contact record'),
-    'group' => t('Order'),
     'base' => 'uc_civicrm_action_order_civicrm',
     'parameter' => array(
         'order' => array('type' => 'uc_order', 'label' => t('Order')),
@@ -22,7 +21,6 @@ function uc_civicrm_rules_action_info() {
 
   $actions['uc_civicrm_update_order_civicrm'] = array(
     'label' => t('Update CiviCRM contact record'),
-    'group' => t('Order'),
     'base' => 'uc_civicrm_action_order_civicrm',
     'parameter' => array(
         'order' => array('type' => 'uc_order', 'label' => t('Order'),),

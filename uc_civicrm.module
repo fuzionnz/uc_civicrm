@@ -2,46 +2,48 @@
 
 /**
  * @file
- * Module to integrate Ubercart with CiviCRM
+ * Module to integrate Ubercart with CiviCRM.
  */
 
 /**
- * Implementation of hook_help()
+ * Implementation of hook_help().
  */
 function uc_civicrm_help($path = 'admin/help#uc_civicrm') {
   if (!module_exists('civicrm')) { return; }
   switch ($path) {
     case 'admin/help#uc_civicrm':
-      return t('This module integrates Ubercart with CiviCRM. When a customer buys something from the store, the name and address information they provide is added to CiviCRM. Existing contact records will be updated. The new or updated contact is added to the \'Purchasers\' group. An activity history record of type \'Purchase\' is added to the contact\'s history and the \'Purchases\' tab on the contact\'s dashboard is populated with a link to their order history in Ubercart.');
+      return t('This module integrates Ubercart with CiviCRM. When a customer buys something from the store, the name and address information they provide is added to CiviCRM. Existing contact records will be updated. The new or updated contact is added to a group, activity history record of type \'Purchase\' is added to the contact\'s history and the \'Purchases\' tab on the contact\'s dashboard is populated with a link to their order history.');
   }
 }
 
+
 /**
- * Implementation of CiviCRM hook_civicrm_tabs()
+ * Implementation of hook_civicrm_tabs().
  */
 function uc_civicrm_civicrm_tabs(&$tabs, $cid) {
   if (!civicrm_initialize()) { return; }
   $uid = CRM_Core_BAO_UFMatch::getUFId($cid);
   if (empty($uid)) { return; }
 
-  module_load_include('inc', 'uc_order', 'uc_order.admin');
-  $history = uc_order_history(user_load($uid));
+  $history = uc_civicrm_contact_transaction($uid, FALSE);
   $count = count($history['orders']['#rows']);
 
-  $tabs[] = array(
-      'id'     => 'purchases',
-      'title'  => t('Purchases'),
-      'url'    => url("admin/store/customers/orders/$uid"),
-      'count'  => $count,
-      'weight' => 99,
+  $tab = array(
+    'id'     => 'purchases',
+    'title'  => t('Purchases'),
+    'count'  => $count,
+    'weight' => 99,
   );
+
+  if ($count > 0) { $tab['url'] = url("admin/store/civicrm/customer/orders/$uid"); }
+  $tabs[] = $tab;
 
   return $tabs;
 }
 
 
 /**
- * Implementation of Drupal hook_menu()
+ * Implementation of hook_menu().
  */
 function uc_civicrm_menu() {
   if (!module_exists('civicrm')) { return; }
@@ -57,7 +59,7 @@ function uc_civicrm_menu() {
 
   $items['admin/settings/uc_civicrm_menu'] = array(
     'title' => 'Ubercart/CiviCRM',
-    'description' => 'Configuration options for the Ubercart CiviCRM integration module.',
+    'description' => 'Configuration options for Ubercart/CiviCRM integration.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('uc_civicrm_admin'),
     'access arguments' => array('access administration pages'),
@@ -69,20 +71,62 @@ function uc_civicrm_menu() {
 
 
 /**
- * Callback to expose order information in a CiviCRM tab
+ * Callback to expose order information in a CiviCRM tab.
  *
  * @param $uid
  *   Drupal UID for the customer
  */
-function uc_civicrm_contact_transaction($uid) {
+function uc_civicrm_contact_transaction($uid, $snippet = TRUE) {
   if (!module_exists('civicrm') || is_null($uid)) { return; }
   if (!civicrm_initialize()) { return; }
 
-  module_load_include('inc', 'uc_store', 'uc_store.admin');
-  $output = uc_store_customer_orders($uid);
-  print $output;
-
+  module_load_include('inc', 'uc_order', 'uc_order.customers');
+  $output = uc_order_customer_orders($uid);
+  if ($snippet) { print render($output); }
+  else { return $output; }
   return;
+}
+
+
+/**
+ *  Admin form configuration.
+ */
+function uc_civicrm_admin() {
+  if (!module_exists('civicrm')) { return; }
+  if (!civicrm_initialize()) { return; }
+  require_once 'api/v2/Group.php';
+  require_once 'CRM/Core/Config.php';
+
+  $params = array();
+  $groups = civicrm_group_get($params);
+  $options = array();
+  foreach ($groups as $group) { $options[$group['id']] = $group['title']; }
+  natsort(&$options);
+
+  // Get contribution types
+  $sql = "SELECT id, name FROM civicrm_contribution_type WHERE is_active = 1";
+  $dao =& CRM_Core_DAO::executeQuery($sql, array());
+  $types = array(0 => "Select a type...");
+  while ($dao->fetch()) { $types[$dao->id] = $dao->name; }
+
+  $form = array();
+  $form['uc_civicrm_contribution_type'] = array(
+    '#type' => 'select',
+    '#title' => t('Contribution type'),
+    '#default_value' => variable_get('uc_civicrm_contribution_type', array()),
+    '#options' => $types,
+    '#description' => t('Select a contribution type for purchases, making a new type with a name like "Ubercart purchase" is recommended.'),
+  );
+
+  $form['uc_civicrm_groups'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Groups to add purchasers to'),
+    '#default_value' => variable_get('uc_civicrm_groups', array()),
+    '#options' => $options,
+    '#description' => t('Check to add purchasers to the selected groups')
+  );
+
+  return system_settings_form($form);
 }
 
 
@@ -111,10 +155,6 @@ function uc_civicrm_action_order_civicrm($order, $is_new = TRUE) {
 
     $cid = _uc_civicrm_add_update_contact($cid, $order);
     if ($cid === false) { return; }
-
-    // add an activity 'Purchase' for this contact
-    // -> removed because we're adding a contribution
-    // $rc = _uc_civicrm_add_activity_purchase($cid, $order->order_id);
 
     // add the contribution record
     _uc_civicrm_add_contribution($cid, $order);
@@ -183,13 +223,9 @@ function _uc_civicrm_add_to_groups($cid) {
  *                 integer => CID if non-zero; must create if zero
  */
 function _uc_civicrm_get_cid($order) {
-  // Drupal has a UID for this customer. Look in the CiviCRM contacts table for
-  // a contact that matches the UID or matches the primary email.
   if ($order->uid != 0) {
-    $match = CRM_Core_BAO_UFMatch::synchronizeUFMatch(
-        $user, $order->uid, $order->primary_email, 'Drupal', false, 'Individual');
+    $match = CRM_Core_BAO_UFMatch::synchronizeUFMatch($user, $order->uid, $order->primary_email, 'Drupal', false, 'Individual');
     if (!is_object($match)) { return false; }
-
     return $match->contact_id;
   }
 
@@ -205,8 +241,6 @@ function _uc_civicrm_get_cid($order) {
 
   // No matches found, so we will need to create a contact.
   if (count($contact) == 0) { return 0; }
-
-  // One or more contact matches found. Return one CID
   $cid = array_shift($contact);
 
   return $cid;
@@ -467,7 +501,7 @@ function _uc_civicrm_add_contribution($cid, &$order) {
 function _uc_civicrm_map_payment_instrument($paymentDevice) {
   // Note that the payment methods for Ubercart are hardcoded in the payment
   // modules under hook_payment_method(), so anything that's not explicitly a
-  // check or cash to be a credit card.
+  // check or cash has to be a credit card.
   $map = array(
     "credit" => 1,
     "cod"    => 3,
@@ -503,7 +537,7 @@ function _uc_civicrm_map_contribution_status($orderStatus) {
   if (array_key_exists($orderStatus, $map)) { $id = $map[$orderStatus]; }
   else {
     $id = 1; // Oh no.
-    watchdog('uc_civicrm', 'There is no status that maps to '. $orderStatus . ' Marking as "Complete"', array(), WATCHDOG_WARNING);
+    watchdog('uc_civicrm', 'There is no status that maps to '. $orderStatus .', marking as "Complete"', array(), WATCHDOG_WARNING);
   }
 
   return $id;
@@ -511,7 +545,7 @@ function _uc_civicrm_map_contribution_status($orderStatus) {
 
 
 /**
- * Create string to insert for purchase activity details
+ * Create string to insert for purchase activity details.
  */
 function _uc_civicrm_create_detail_string($order) {
   $str = '';
@@ -523,46 +557,4 @@ function _uc_civicrm_create_detail_string($order) {
   }
 
   return $str;
-}
-
-
-/**
- *  Admin form configuration for this module
- */
-function uc_civicrm_admin() {
-  if (!module_exists('civicrm')) { return; }
-  if (!civicrm_initialize()) { return; }
-  require_once 'api/v2/Group.php';
-  require_once 'CRM/Core/Config.php';
-
-  $params = array();
-  $groups = civicrm_group_get($params);
-  $options = array();
-  foreach ($groups as $group) { $options[$group['id']] = $group['title']; }
-  natsort(&$options);
-
-  // Get contribution types
-  $sql = "SELECT id, name FROM civicrm_contribution_type WHERE is_active = 1";
-  $dao =& CRM_Core_DAO::executeQuery($sql, array());
-  $types = array(0 => "Select a type...");
-  while ($dao->fetch()) { $types[$dao->id] = $dao->name; }
-
-  $form = array();
-  $form['uc_civicrm_contribution_type'] = array(
-    '#type' => 'select',
-    '#title' => t('Contribution type'),
-    '#default_value' => variable_get('uc_civicrm_contribution_type', array()),
-    '#options' => $types,
-    '#description' => t('Select a contribution type for purchases, making a new type with a name like "Ubercart purchase" is recommended.'),
-  );
-
-  $form['uc_civicrm_groups'] = array(
-    '#type' => 'checkboxes',
-    '#title' => t('Groups to add purchasers to'),
-    '#default_value' => variable_get('uc_civicrm_groups', array()),
-    '#options' => $options,
-    '#description' => t('Check to add purchasers to the selected groups')
-  );
-
-  return system_settings_form($form);
 }
