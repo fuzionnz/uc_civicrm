@@ -4,7 +4,7 @@
  * 
  * Removes the module variables
  */
-function compass_rose_uninstall() {
+function uc_civicrm_uninstall() {
   $results = db_query("SELECT v.name FROM {variable} AS v WHERE v.name LIKE '%s%%'", 'uc_civicrm_');
   while ($row = db_fetch_array($results)) { variable_del($row['name']); }
 }
