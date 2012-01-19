@@ -50,7 +50,7 @@ function uc_civicrm_menu() {
 
   $items = array();
   $items['admin/store/civicrm/customer/orders/%'] = array(
-    'title'            => t('CiviCRM'),
+    'title'            => 'CiviCRM',
     'page callback'    => 'uc_civicrm_contact_transaction',
     'page arguments'   => array(5),
     'access arguments' => array('administer CiviCRM'),
@@ -104,7 +104,7 @@ function uc_civicrm_admin() {
   natsort(&$options);
 
   // Get contribution types
-  $sql = "SELECT id, name FROM civicrm_contribution_type WHERE is_active = 1";
+  $sql = "SELECT id, name FROM {civicrm_contribution_type} WHERE is_active = 1";
   $dao =& CRM_Core_DAO::executeQuery($sql, array());
   $types = array(0 => "Select a type...");
   while ($dao->fetch()) { $types[$dao->id] = $dao->name; }
@@ -151,10 +151,10 @@ function uc_civicrm_action_order_civicrm($order, $is_new = TRUE) {
 
     // Find or create a CiviCRM contact ID for the customer.
     $cid = _uc_civicrm_get_cid($order);
-    if ($cid === false) { return; }
+    if ($cid === FALSE) { return; }
 
     $cid = _uc_civicrm_add_update_contact($cid, $order);
-    if ($cid === false) { return; }
+    if ($cid === FALSE) { return; }
 
     // add the contribution record
     _uc_civicrm_add_contribution($cid, $order);
@@ -165,10 +165,10 @@ function uc_civicrm_action_order_civicrm($order, $is_new = TRUE) {
     require_once 'CRM/Core/Config.php';
     require_once "api/v2/Contribute.php";
     $config =& CRM_Core_Config::singleton();
-    $params = array('invoice_id' => $order->order_id ."_uc", 'return.contact_id' => 1,);
+    $params = array('invoice_id' => $order->order_id . "_uc", 'return.contact_id' => 1, );
     $result =& civicrm_contribution_search($params);
     if (civicrm_error($result)) {
-      watchdog('uc_civicrm', 'Error searching for contribution: '. $result['error_message'], array(), WATCHDOG_ERROR);
+      watchdog('uc_civicrm', 'Error searching for contribution: ' . $result['error_message'], array(), WATCHDOG_ERROR);
     } else {
       $contribution = array_shift($result);
       $params = array(
@@ -181,7 +181,7 @@ function uc_civicrm_action_order_civicrm($order, $is_new = TRUE) {
       // @TODO There is a very odd issue here, evidently the system works,
       // but there are times when this fires before a contribution has been added.
       if (civicrm_error ($result)) {
-        watchdog('uc_civicrm', 'Error updating contribution: '. $result['error_message'], array(), WATCHDOG_ERROR);
+        watchdog('uc_civicrm', 'Error updating contribution: ' . $result['error_message'], array(), WATCHDOG_ERROR);
       }
     }
   }
@@ -206,7 +206,7 @@ function _uc_civicrm_add_to_groups($cid) {
       $params = array('contact_id' => $cid, 'group_id' => $key);
       $result = civicrm_group_contact_add($params);
       if (!empty($result['is_error'])) {
-        watchdog('uc_civicrm', 'Error adding contact to group: '. $result['error_message'], array(), WATCHDOG_ERROR);
+        watchdog('uc_civicrm', 'Error adding contact to group: ' . $result['error_message'], array(), WATCHDOG_ERROR);
       }
     }
   }
@@ -224,19 +224,19 @@ function _uc_civicrm_add_to_groups($cid) {
  */
 function _uc_civicrm_get_cid($order) {
   if ($order->uid != 0) {
-    $match = CRM_Core_BAO_UFMatch::synchronizeUFMatch($user, $order->uid, $order->primary_email, 'Drupal', false, 'Individual');
-    if (!is_object($match)) { return false; }
+    $match = CRM_Core_BAO_UFMatch::synchronizeUFMatch($user, $order->uid, $order->primary_email, 'Drupal', FALSE, 'Individual');
+    if (!is_object($match)) { return FALSE; }
     return $match->contact_id;
   }
 
   // The customer is anonymous.  Look in the CiviCRM contacts table for a
   // contact that matches the primary email.
-  $params = array('email' => $order->primary_email, 'return.contact_id' => true);
+  $params = array('email' => $order->primary_email, 'return.contact_id' => TRUE);
   $contact = civicrm_contact_search($params);
   if (!empty($contact['is_error'])) {
     watchdog('uc_civicrm', 'civicrm_contact_search(): ' . $contact['error_message'], array(), WATCHDOG_ERROR);
 
-    return false;
+    return FALSE;
   }
 
   // No matches found, so we will need to create a contact.
@@ -262,8 +262,8 @@ function _uc_civicrm_add_update_contact($cid, $order) {
     );
     $contact = civicrm_contact_search($params);
     if (!empty($contact['is_error'])) {
-      watchdog('uc_civicrm', 'civicrm_contact_search():'. $contact['error_message'], array(), WATCHDOG_ERROR);
-      return false;
+      watchdog('uc_civicrm', 'civicrm_contact_search():' . $contact['error_message'], array(), WATCHDOG_ERROR);
+      return FALSE;
     }
     $contact = array_shift($contact);
     $contact['contact_id'] = $cid;
@@ -294,8 +294,8 @@ function _uc_civicrm_add_update_contact($cid, $order) {
   // Create contact or update existing contact
   $result = civicrm_contact_add($contact);
   if (!empty($result['is_error'])) {
-    watchdog('uc_civicrm', 'civicrm_contact_add():'. $rc['error_message'], array(), WATCHDOG_ERROR);
-    return false;
+    watchdog('uc_civicrm', 'civicrm_contact_add():' . $rc['error_message'], array(), WATCHDOG_ERROR);
+    return FALSE;
   }
 
   // Location
@@ -303,7 +303,7 @@ function _uc_civicrm_add_update_contact($cid, $order) {
     $deliveryPhone = array();
     if (!empty($order->delivery_phone)) {
       $deliveryPhone = array(
-        'is_primary' => true,
+        'is_primary' => TRUE,
         'phone' => $order->delivery_phone,
         'phone_type_id' => 1,
         'location_type' => 'Home'
@@ -314,7 +314,7 @@ function _uc_civicrm_add_update_contact($cid, $order) {
     $address = array(
       1 => array(
         'location_type_id'       => 1,
-        'is_primary'             => true,
+        'is_primary'             => TRUE,
         'city'                   => $order->delivery_city,
         'state_province'         => uc_get_zone_code($order->delivery_zone),
         'postal_code'            => $order->delivery_postal_code,
@@ -330,13 +330,13 @@ function _uc_civicrm_add_update_contact($cid, $order) {
 
     $newLocation = civicrm_location_update($params);
     if ($newLocation['is_error'] &&
-        strpos($newLocation['error_message'], "Invalid Location Type(s) : Home") !== false) {
+        strpos($newLocation['error_message'], "Invalid Location Type(s) : Home") !== FALSE) {
       $newLocation = civicrm_location_add($params);
     }
 
     // Log the error, but continue.
     if (civicrm_error($newLocation)) {
-      watchdog('uc_civicrm', 'civicrm_location_update(): '. $newLocation['error_message'], array(), WATCHDOG_ERROR);
+      watchdog('uc_civicrm', 'civicrm_location_update(): ' . $newLocation['error_message'], array(), WATCHDOG_ERROR);
     }
   }
 
@@ -345,7 +345,7 @@ function _uc_civicrm_add_update_contact($cid, $order) {
   if (!empty($order->billing_phone)) {
     $billingPhone = array(
       'phone' => $order->billing_phone,
-      'is_primary' => false,
+      'is_primary' => FALSE,
       'phone_type_id' => 1,
       'location_type' => 'Billing',
     );
@@ -369,13 +369,13 @@ function _uc_civicrm_add_update_contact($cid, $order) {
 
   $newBillingLocation = civicrm_location_update($params);
   if ($newBillingLocation['is_error'] &&
-      strpos($newBillingLocation['error_message'], "Invalid Location Type(s) : Billing") !== false) {
+      strpos($newBillingLocation['error_message'], "Invalid Location Type(s) : Billing") !== FALSE) {
     $newBillingLocation = civicrm_location_add($params);
   }
 
   // Log the error, but continue.
   if (civicrm_error($newBillingLocation)) {
-    watchdog('uc_civicrm', 'civicrm_location_update(): '. $newBillingLocation['error_message'], array(), WATCHDOG_ERROR);
+    watchdog('uc_civicrm', 'civicrm_location_update(): ' . $newBillingLocation['error_message'], array(), WATCHDOG_ERROR);
   }
 
   return $cid;
@@ -386,8 +386,8 @@ function _uc_civicrm_add_update_contact($cid, $order) {
  * Creates required contribution fields if they have not already been created.
  */
 function _uc_civicrm_create_custom_contribution_fields() {
-  $groupId = variable_get('uc_civicrm_contribution_group_id', false);
-  if ($groupId != false) { return; }
+  $groupId = variable_get('uc_civicrm_contribution_group_id', FALSE);
+  if ($groupId != FALSE) { return; }
 
   require_once 'CRM/Core/Config.php';
   require_once 'api/v2/CustomGroup.php';
@@ -444,7 +444,7 @@ function _uc_civicrm_add_contribution($cid, &$order) {
   $payDataAry = uc_payment_load_payments($order->order_id);
   $payDataAry[0]->data = unserialize($payDataAry[0]->data);
   $txnId = isset($payDataAry[0]->data['txn_id']) ?
-      $payDataAry[0]->data['txn_id'] : 'TRXN ID NOT AVAILABLE '. md5($order->order_id);
+      $payDataAry[0]->data['txn_id'] : 'TRXN ID NOT AVAILABLE ' . md5($order->order_id);
 
   // @FIXME Landmine. CiviCRM doesn't seem to accept financial values with
   // precision greater than 2 digits after the decimal.
@@ -483,10 +483,10 @@ function _uc_civicrm_add_contribution($cid, &$order) {
 
   // Log the error, but continue.
   if (civicrm_error($contribution)) {
-    watchdog('uc_civicrm', 'civicrm_contribution_add(): '. $contribution['error_message'], array(), WATCHDOG_ERROR);
+    watchdog('uc_civicrm', 'civicrm_contribution_add(): ' . $contribution['error_message'], array(), WATCHDOG_ERROR);
   }
 
-  return true;
+  return TRUE;
 }
 
 
@@ -500,7 +500,7 @@ function _uc_civicrm_add_contribution($cid, &$order) {
  */
 function _uc_civicrm_map_payment_instrument($paymentDevice) {
   // Note that the payment methods for Ubercart are hardcoded in the payment
-  // modules under hook_payment_method(), so anything that's not explicitly a
+  // modules under hook_uc_payment_method(), so anything that's not explicitly a
   // check or cash has to be a credit card.
   $map = array(
     "credit" => 1,
@@ -537,7 +537,7 @@ function _uc_civicrm_map_contribution_status($orderStatus) {
   if (array_key_exists($orderStatus, $map)) { $id = $map[$orderStatus]; }
   else {
     $id = 1; // Oh no.
-    watchdog('uc_civicrm', 'There is no status that maps to '. $orderStatus .', marking as "Complete"', array(), WATCHDOG_WARNING);
+    watchdog('uc_civicrm', 'There is no status that maps to ' . $orderStatus . ', marking as "Complete"', array(), WATCHDOG_WARNING);
   }
 
   return $id;
