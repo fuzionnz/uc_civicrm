@@ -3,10 +3,5 @@ description = Integrates Ubercart with CiviCRM.
 package = "Ubercart - extra"
 dependencies[] = "civicrm"
 dependencies[] = "uc_order"
-
-; Information added by drupal.org packaging script on 2011-10-27
-version = "7.x-1.x-dev"
 core = "7.x"
-project = "uc_civicrm"
-datestamp = "1319718149"
 
