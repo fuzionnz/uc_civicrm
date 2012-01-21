@@ -93,6 +93,7 @@ function uc_civicrm_contact_transaction($uid, $snippet = TRUE) {
   $output = uc_store_customer_orders($uid);
   if ($snippet) { print $output; }
   else { return $output; }
+
   return;
 }
 
@@ -113,27 +114,53 @@ function uc_civicrm_admin() {
 
   $sql = "SELECT id, name FROM civicrm_contribution_type WHERE is_active = 1";
   $dao =& CRM_Core_DAO::executeQuery($sql, array());
-  $contTypes = array(0 => "Select a type...");
   while ($dao->fetch()) {
     $contTypes[$dao->id] = $dao->name;
+  }
+
+  $sql = "SELECT id, name FROM civicrm_location_type WHERE is_active = 1";
+  $dao =& CRM_Core_DAO::executeQuery($sql, array());
+  while ($dao->fetch()) {
+    $loctypes[$dao->id] = $dao->name;
   }
 
   $form = array();
   $form['uc_civicrm_contribution_type'] = array(
     '#type' => 'select',
     '#title' => t('Contribution type'),
-    '#default_value' => variable_get('uc_civicrm_contribution_type', array()),
+    '#default_value' => variable_get('uc_civicrm_contribution_type', 1),
     '#options' => $contTypes,
-    '#description' => t('Select a contribution type for purchases, making a new type with a name like "Ubercart purchase" is recommended.'),
+    '#description' => t('Select a contribution type for purchases. Making a new type with a name like "Ubercart purchase" is recommended.'),
   );
 
   $form['uc_civicrm_groups'] = array(
     '#type' => 'checkboxes',
-    '#title' => t('Groups to add purchasers to'),
+    '#title' => t('Add purchaser to group'),
     '#default_value' => variable_get('uc_civicrm_groups', array()),
     '#options' => $options,
-    '#description' => t('Check to add purchasers to the selected groups')
+    '#description' => t('Check to add purchasers to the selected groups'),
   );
+
+  $form['uc_civicrm_location_type'] = array(
+    '#type' => 'select',
+    '#title' => t('Location type'),
+    '#options' => $loctypes,
+    '#description' => t('Select an alternate location type for address updates on checkout.'),
+    '#default_value' => variable_get('uc_civicrm_location_type', '1'),
+  );
+
+  $form['uc_civicrm_location_update'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Disable contact address updates?'),
+    '#description' => t('If checked, address information will not be updated.'),
+    '#default_value' => variable_get('uc_civicrm_location_update', 0),
+  );
+
+  if (variable_get('uc_civicrm_location_update', 0) == 1) {
+    $form['uc_civicrm_location_type']['#disabled'] = TRUE;
+  }
+
+  drupal_add_js(drupal_get_path('module', 'uc_civicrm') . '/uc_civicrm.js');
 
   return system_settings_form($form);
 }
@@ -304,7 +331,6 @@ function _uc_civicrm_get_cid($order) {
   $cid = array_shift($contact);
 
   return $cid;
-
 }
 
 
@@ -332,16 +358,38 @@ function _uc_civicrm_add_update_contact($cid, $order) {
     unset($contact['contact_source']);
   }
 
+  $buyer = array();
   if (!empty($order->delivery_last_name) && !empty($order->delivery_first_name)) {
     $contact['last_name']    = $order->delivery_last_name;
     $contact['first_name']   = $order->delivery_first_name;
     $contact['sort_name']    = "{$order->delivery_last_name}, {$order->delivery_first_name}";
     $contact['display_name'] = "{$order->delivery_first_name} {$order->delivery_last_name}";
+
+    $buyer['phone'] = $order->delivery_phone;
+    $buyer['city'] = $order->delivery_city;
+    $buyer['zone'] = $order->delivery_zone;
+    $buyer['postal'] = $order->delivery_postal_code;
+    $buyer['street1'] = $order->delivery_street1;
+    $buyer['street2'] = $order->delivery_street2;
+    $buyer['country'] = $order->delivery_country;
+
+    // Use location type defined in admin settings
+    $buyer['location_type_id'] = variable_get('uc_civicrm_location_type', '1');
+
   } else {
     $contact['last_name']    = $order->billing_last_name;
     $contact['first_name']   = $order->billing_first_name;
     $contact['sort_name']    = "{$order->billing_last_name}, {$order->billing_first_name}";
     $contact['display_name'] = "{$order->billing_first_name} {$order->billing_last_name}";
+
+    $buyer['phone'] = $order->billing_phone;
+    $buyer['city'] = $order->billing_city;
+    $buyer['zone'] = $order->billing_zone;
+    $buyer['zip'] = $order->billing_postal_code;
+    $buyer['street1'] = $order->billing_street1;
+    $buyer['street2'] = $order->billing_street2;
+    $buyer['country'] = $order->billing_country;
+    $buyer['location_type'] = 'Billing';
   }
 
   $contact['contact_type'] = 'Individual';
@@ -355,102 +403,64 @@ function _uc_civicrm_add_update_contact($cid, $order) {
     watchdog('uc_civicrm', 'civicrm_contact_add() returned '. $rc['error_message'], array(), WATCHDOG_ERROR);
     return false;
   }
+  $buyer['cid'] = $rc['contact_id'];
 
-  if (!empty($order->delivery_last_name) && !empty($order->delivery_first_name)) {
-    $deliveryPhone = array();
-    if (!empty($order->delivery_phone)) {
-      $deliveryPhone = array(
-        'is_primary' => true,
-        'phone' => $order->delivery_phone,
-        'phone_type_id' => 1,
-        'location_type' => 'Home'
-      );
-    }
-
-    $countries = uc_get_country_data(array('country_id' => $order->delivery_country));
-
-    $address = array(
-      1 => array(
-        'location_type_id'       => 1,
-        'is_primary'             => true,
-        'city'                   => $order->delivery_city,
-        'state_province'         => uc_get_zone_code($order->delivery_zone),
-        'postal_code'            => $order->delivery_postal_code,
-        'street_address'         => $order->delivery_street1,
-        'supplemental_address_1' => $order->delivery_street2,
-        'country'                => $countries[0]['country_iso_code_2']
-      )
-    );
-
-    $phones = array($deliveryPhone);
-    $params = array(
-      'version'    => '3.0',
-      'contact_id' => $cid,
-      'phone'      => $phones,
-      'address'    => $address
-    );
-
-    $newLocation = civicrm_location_update($params);
-    if ($newLocation['is_error'] &&
-        strpos($newLocation['error_message'], "Invalid Location Type(s) : Home") !== false) {
-      $newLocation = civicrm_location_add($params);
-    }
-
-    if (civicrm_error($newLocation)) {
-      watchdog('uc_civicrm', 'civicrm_location_update() returned '. $newLocation['error_message'], array(), WATCHDOG_ERROR);
-    }
-  }
-
-  // Begin adding billing address
-  $billingPhone = array();
-  if (!empty($order->billing_phone)) {
-    $billingPhone = array(
-      'phone' => $order->billing_phone,
-      'is_primary' => false,
-      'phone_type_id' => 1,
-      'location_type' => 'Billing',
-    );
-  }
-
-  $countries = uc_get_country_data(array('country_id' => $order->billing_country));
-
-  $address = array(
-    1 => array(
-      'location_type'          => 'Billing', // assumes the billing address type id == 5
-      'city'                   => $order->billing_city,
-      'state_province'         => uc_get_zone_code($order->billing_zone),
-      'postal_code'            => $order->billing_postal_code,
-      'street_address'         => $order->billing_street1,
-      'supplemental_address_1' => $order->billing_street2,
-      'country'                => $countries[0]['country_iso_code_2']
-    )
-  );
-
-  $phones = array($billingPhone);
-  $params = array(
-    'version'    => '3.0',
-    'contact_id' => $cid,
-    'phone'      => $phones,
-    'address'    => $address
-  );
-
-  $newBillingLocation = civicrm_location_update($params);
-  if ($newBillingLocation['is_error']
-    && strpos($newBillingLocation['error_message'],
-      "Invalid Location Type(s) : Billing") !== false) {
-    $newBillingLocation = civicrm_location_add($params);
-  }
-
-  if (civicrm_error($newBillingLocation)) {
-    watchdog('uc_civicrm', 'civicrm_location_update() returned '. $newBillingLocation['error_message'], array(), WATCHDOG_ERROR);
+  if (variable_get('uc_civicrm_location_update', 0) == 0) {
+    _uc_civicrm_update_address($buyer);
   }
 
   return $cid;
 }
 
+function _uc_civicrm_update_address($buyer) {
+  require_once 'api/v2/Location.php';
+  $phone = array(
+      'phone' => $buyer['phone'],
+      'phone_type_id' => 1,
+      'location_type_id' => $buyer['location_type_id'],
+  );
+
+  $countries = uc_get_country_data(array('country_id' => $buyer['country']));
+
+  $address = array(
+      1 => array(
+        'location_type_id'       => $buyer['location_type_id'],
+        'is_primary'             => FALSE,
+        'city'                   => $buyer['city'],
+        'state_province'         => uc_get_zone_code($buyer['zone']),
+        'postal_code'            => $buyer['postal'],
+        'street_address'         => $buyer['street1'],
+        'supplemental_address_1' => $buyer['street2'],
+        'country'                => $countries[0]['country_iso_code_2'],
+      )
+  );
+
+  $sql = "SELECT is_reserved FROM civicrm_location_type WHERE id = " . $buyer['location_type_id'];
+  $dao =& CRM_Core_DAO::executeQuery($sql, array());
+  while ($dao->fetch()) {
+    if ($dao->id == 1) { $address[1]['is_primary'] = TRUE; }
+  }
+
+  $params = array(
+      'version'    => '3.0',
+      'contact_id' => $buyer['cid'],
+      'phone'      => array($phone),
+      'address'    => $address,
+  );
+
+  $location = civicrm_location_update($params);
+  if (civicrm_error($location)) {
+    // try to add instead of update
+    $location = civicrm_location_add($params);
+    if (civicrm_error($location)) {
+      watchdog('uc_civicrm', 'civicrm_location_add(): '. $location['error_message'], array(), WATCHDOG_ERROR);
+    }
+  }
+}
+
 
 /**
- * Creates required contribution fields if they have nto already been created.
+ * Creates required contribution fields if they have not already been created.
  */
 function _uc_civicrm_create_custom_contribution_fields() {
   $groupId = variable_get('uc_civicrm_contribution_group_id', false);
@@ -458,8 +468,7 @@ function _uc_civicrm_create_custom_contribution_fields() {
 
   require_once 'CRM/Core/Config.php';
   require_once 'api/v2/CustomGroup.php';
-  // First we need to check if the Sales Tax and Shipping
-  // custom fields have been created
+
   $params = array(
     'title'            => 'Ubercart Purchases',
     'name'             => 'ubercart_purchases',
@@ -472,7 +481,6 @@ function _uc_civicrm_create_custom_contribution_fields() {
   $customGroup = civicrm_custom_group_create($params);
   variable_set('uc_civicrm_contribution_group_id', $customGroup['id']);
 
-  // Next add the fields
   $params = array(
     'custom_group_id' => $customGroup['id'],
     'label'           => 'Sales Tax',
@@ -503,16 +511,12 @@ function _uc_civicrm_create_custom_contribution_fields() {
 }
 
 
-
 /**
  * Add a contribution record.
  */
 function _uc_civicrm_add_contribution($cid, &$order) {
-  // check to see if the fields we need have been created, if not, do it.
-  _uc_civicrm_create_custom_contribution_fields( );
-  // get the current order's info for transaction id
+  _uc_civicrm_create_custom_contribution_fields();
   $payDataAry = uc_payment_load_payments($order->order_id);
-  // this is serialized by ubercart, so we'll undo that
   $payDataAry[0]->data = unserialize($payDataAry[0]->data);
   // if a transaction id exists, we want it, else,
   // fill the field with semi-meaningful hash of the order id
@@ -657,5 +661,6 @@ function _uc_civicrm_create_detail_string($order) {
     $str .= $product->title;
     $n++;
   }
+
   return $str;
 }
