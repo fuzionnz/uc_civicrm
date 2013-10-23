@@ -94,7 +94,6 @@ function uc_civicrm_admin() {
   if (!module_exists('civicrm')) { return; }
   if (!civicrm_initialize()) { return; }
   require_once 'api/v2/Group.php';
-  require_once 'CRM/Core/Config.php';
   $params = array();
   $groups = civicrm_group_get($params);
 
@@ -145,7 +144,6 @@ function uc_civicrm_action_order_civicrm($order, $is_new = TRUE) {
   if (!module_exists('civicrm')) { return; }
   if (!civicrm_initialize()) { return; }
   if ($is_new) {
-    require_once 'CRM/Core/BAO/UFMatch.php';
     require_once 'api/v2/Contact.php';
 
     // Find or create a CiviCRM contact ID for the customer.
@@ -162,7 +160,6 @@ function uc_civicrm_action_order_civicrm($order, $is_new = TRUE) {
     // add this contact to selected groups
     _uc_civicrm_add_to_groups($cid);
   } else {
-    require_once 'CRM/Core/Config.php';
     require_once "api/v2/Contribute.php";
     $config =& CRM_Core_Config::singleton();
     $params = array('invoice_id' => $order->order_id . "_uc", 'return.contact_id' => 1, );
@@ -274,7 +271,6 @@ function _uc_civicrm_add_update_contact($cid, $order) {
   }
   
   //Determine if the contact is new - added by bot
-    require_once 'CRM/Core/BAO/Log.php';
   $log = new CRM_Core_DAO_Log();
   $log->entity_table = 'civicrm_contact';
   $log->entity_id = $cid;
@@ -419,7 +415,6 @@ function _uc_civicrm_create_custom_contribution_fields() {
   $groupId = variable_get('uc_civicrm_contribution_group_id', FALSE);
   if ($groupId != FALSE) { return; }
 
-  require_once 'CRM/Core/Config.php';
   require_once 'api/v2/CustomGroup.php';
   // First we need to check if the Sales Tax and Shipping custom fields have
   // already been created.
