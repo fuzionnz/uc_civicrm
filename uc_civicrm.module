@@ -177,6 +177,102 @@ function uc_civicrm_action_update_contact($order) {
 }
 
 /**
+ *  Implementation of Ubercart conditional action hook_ca_predicate().
+ *
+ *  Tell Ubercart to let us know when an order is complete
+ */
+function uc_civicrm_ca_predicate() {
+  if (!module_exists('civicrm')) { return; }
+
+  $predicates['uc_civicrm_contact_on_order'] = array(
+    '#title'   => t('Copy to CiviCRM upon order submission'),
+    '#trigger' => 'uc_checkout_complete',
+    '#class'   => 'uc_civicrm',
+    '#status'  => 1,
+    '#actions' => array(
+      array(
+        '#name'         => 'uc_civicrm_action_update_contact',
+        '#title'        => t('Copy order information to CiviCRM'),
+        '#argument_map' => array('order' => 'order',),
+      ),
+    ),
+  );
+
+  $predicates['uc_civicrm_check_order_status'] = array(
+    '#title'   => t('Sync CiviCRM status on status update'),
+    '#trigger' => 'uc_order_status_update',
+    '#class'   => 'uc_civicrm',
+    '#status'  => 1,
+    '#actions' => array(
+      array(
+        '#name'         => 'uc_civicrm_sync_status',
+        '#title'        => t('Syncronize status'),
+        '#argument_map' => array('order' => 'updated_order',),
+      ),
+    ),
+  );
+
+  return $predicates;
+}
+
+
+/**
+ * Implementation of Ubercart conditional action hook_ca_action().
+ */
+function uc_civicrm_ca_action() {
+  if (!module_exists('civicrm')) { return; }
+
+  $order_arg = array('#entity' => 'uc_order', '#title'  => t('Order'),);
+
+  $actions['uc_civicrm_action_update_contact'] = array(
+    '#title'     => t('Inform CiviCRM upon order submission'),
+    '#category'  => t('Order'),
+    '#callback'  => 'uc_civicrm_action_update_contact',
+    '#arguments' => array('order' => $order_arg,),
+  );
+
+  $actions['uc_civicrm_sync_status'] = array(
+    '#title'     => t('Syncronize order status with CiviCRM when changed'),
+    '#category'  => t('Order'),
+    '#callback'  => 'uc_civicrm_synchronize_status',
+    '#arguments' => array('order' => $order_arg,),
+  );
+
+  return $actions;
+}
+
+
+/**
+ * Callback to inform CiviCRM on order complete
+ *
+ * Called when the conditional action trigger 'uc_checkout_complete'
+ * is pulled, with the order information.  Merge the information
+ * in the order into the CiviCRM contact database.
+ *
+ * @param $order
+ *   Order
+ */
+function uc_civicrm_action_update_contact($order) {
+  global $user;
+
+  if (!civicrm_initialize(TRUE)) {
+    return;
+  }
+  $cid = _uc_civicrm_get_cid($order);
+  if ($cid === false) {
+    watchdog('uc_civicrm', '_uc_civicrm_get_cid() returned '. $cid, array(), WATCHDOG_ERROR);
+    return;
+  }
+
+  $cid = _uc_civicrm_add_update_contact($cid, $order);
+  if ($cid === false) {
+    watchdog('uc_civicrm', '_uc_civicrm_add_update_contact() returned '. $cid, array(), WATCHDOG_ERROR);
+    return;
+  }
+  _uc_civicrm_add_to_groups($cid);
+}
+
+/**
  * Called when the an order is created or changed. Creates a new order or
  * updates an existing one.
  *
@@ -304,7 +400,6 @@ function _uc_civicrm_add_update_contact($cid, $order) {
   require_once 'api/v2/Location.php';
 
   $contact = array();
-
   if ($cid != 0) {
     try{
       $params = array(
@@ -370,6 +465,7 @@ function _uc_civicrm_add_update_contact($cid, $order) {
   // Create contact or update existing contact
   if ( $contactStatus == 'new' && !$contactInfo['values'][$cid]['first_name'] && !$contactInfo['values'][$cid]['last_name']) {
     $result = civicrm_api('contact', 'create', $contact);
+
 if (!empty($result['is_error'])) {
    watchdog('uc_civicrm', 'civicrm_contact_add():' . $rc['error_message'], array(), WATCHDOG_ERROR);
    return FALSE;
@@ -674,6 +770,38 @@ function uc_civicrm_create_activity_form($form_state, $settings = array()) {
   );
 
   return $form;
+}
+
+
+/**
+ * Syncronizes the status of an order from Ubercart to CiviCRM
+ *
+ * @param $order
+ *    Order
+ */
+function uc_civicrm_syncronize_status($order) {
+  if (!module_exists('civicrm')) { return; }
+  civicrm_initialize();
+  require_once 'CRM/Core/Config.php';
+  $config =& CRM_Core_Config::singleton();
+  require_once "api/v2/Contribute.php";
+
+  $searchParams = array('invoice_id' => $order->order_id ."_uc", 'return.contact_id' => 1,);
+
+  $result =& civicrm_contribution_search($searchParams);
+
+  if (civicrm_error ($result)) {
+    watchdog('uc_civicrm', 'uc_civicrm_syncronize_status() returned: '. $result['error_message'], array(), WATCHDOG_ERROR);
+  } else {
+    $contribution = array_shift($result);
+    $setParams = array(
+      'id'                     => $contribution['contribution_id'],
+      'contact_id'             => $contribution['contact_id'],
+      'contribution_status_id' => _uc_civicrm_map_contribution_status($order->order_status),
+    );
+
+    $result =& civicrm_contribution_add($setParams);
+  }
 }
 
 
