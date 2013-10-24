@@ -220,6 +220,10 @@ function _uc_civicrm_add_to_groups($cid) {
  *                 integer => CID if non-zero; must create if zero
  */
 function _uc_civicrm_get_cid($order) {
+  if (!module_exists('civicrm')) {
+    return;
+  }
+
   if ($order->uid != 0) {
     $match = CRM_Core_BAO_UFMatch::synchronizeUFMatch($user, $order->uid, $order->primary_email, 'Drupal', FALSE, 'Individual');
     if (!is_object($match)) { return FALSE; }
@@ -247,6 +251,9 @@ function _uc_civicrm_get_cid($order) {
  *  Add or update contact information
  */
 function _uc_civicrm_add_update_contact($cid, $order) {
+  if(!civicrm_initialize()){
+    return;
+  }
   require_once 'api/v2/Location.php';
 
   $contact = array();
@@ -297,7 +304,6 @@ function _uc_civicrm_add_update_contact($cid, $order) {
     'version' => 3,
   );
 
-  require_once 'api/api.php';
   $contactInfo = civicrm_api( 'contact','get', $contactParams );
   // Prepare array to update contact via civi API
   // Assume that if there is a delivery name then that is the contact to add
