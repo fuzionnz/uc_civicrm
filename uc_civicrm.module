@@ -762,16 +762,23 @@ function uc_civicrm_form_alter(&$form, $form_state, $form_id){
 
 /**
  * Get available locations (pref set types by variable in future instead of hard-coding types
+ * UC Fields are stored to civicrm fields are prefilled from
+ *
+ * We don't provide a form for this yet but you can configure using
+ *  drush php-eval "variable_set('uc_civicrm_locations', array('civicrm-delivery' => 1));"
+ *
+ *(note your location will be merged into the pre-set ones so you can set between 1 & 4)
  * @return array
  */
 function _uc_civicrm_get_locations() {
+  $locations = variable_get('uc_civicrm_locations', array());
   $locationTypes = civicrm_api3('phone', 'getoptions', array('field' => 'location_type_id'));
-  $locations = array(
+  $locations = array_merge(array(
     'civicrm-billing' => array_search('Billing', $locationTypes),
     'uc-billing' => array_search('Ubercart_Billing', $locationTypes),
     'civicrm-delivery' => array_search('Postal', $locationTypes),
     'uc-delivery' => array_search('Ubercart_Shipping', $locationTypes),
-  );
+  ), $locations);
   return $locations;
 }
 
