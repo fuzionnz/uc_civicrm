@@ -471,6 +471,9 @@ function _uc_civicrm_create_custom_contribution_fields() {
  * make one up and add the contribution.
  */
 function _uc_civicrm_add_contribution($cid, &$order) {
+  if(!civicrm_initialize()){
+    return;
+  }
   _uc_civicrm_create_custom_contribution_fields();
 
   $payDataAry = uc_payment_load_payments($order->order_id);
@@ -508,10 +511,10 @@ function _uc_civicrm_add_contribution($cid, &$order) {
     'note' => _uc_civicrm_create_detail_string($order),
     "$salesTaxFieldId" => $taxCost,
     "$shippingCostFieldId" => $shippingCost,
+    'version' => 3,
   );
 
-  require_once 'api/v2/Contribute.php';
-  $contribution = civicrm_contribution_add($params);
+  $contribution = civicrm_api('Contribution', 'create', $params);
 
   // Log the error, but continue.
   if (civicrm_error($contribution)) {
