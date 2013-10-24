@@ -660,3 +660,119 @@ function _uc_civicrm_customer_orders($uid) {
 
   return $build;
 }
+
+/**
+ * Implementation of hook_form_alter().
+ *
+ * @todo is this just one form? we can put it in the fn name can't we
+ */
+function uc_civicrm_form_alter(&$form, $form_state, $form_id){
+  $forms = array('uc_cart_checkout_form');
+  if(!in_array($form_id, $forms) || !civicrm_initialize()) {
+    return;
+  }
+  /*
+  * Global $user to get the uid of the current user. Then load that user
+  * into the variable $account.
+  */
+  global $user;
+  try{
+    $prefillAddresses = $prefillPhones = $primaryAddress = array();
+    $contactID = civicrm_api3('uf_match', 'getvalue', array('return' => 'contact_id', 'uf_id' => $user->uid));
+    $contact = civicrm_api3('contact', 'getsingle', array('id' => $contactID, 'return' => 'first_name, last_name'));
+    $addresses = civicrm_api3('address', 'get', array('contact_id' => $contactID,));
+    $phones = civicrm_api3('phone', 'get', array('contact_id' => $contactID));
+    $locations = _uc_civicrm_get_locations();
+    $addressTypes = array('billing', 'delivery');
+    foreach ($addressTypes as $addressType) {
+      foreach ($addresses ['values'] as $address) {
+        $locationName = array_search($address ['location_type_id'], $locations);
+        if ($locationName == 'civicrm-' . $addressType || (empty($prefillAddresses[$addressType]) && $locationName == 'uc-' . $addressType)) {
+          $prefillAddresses[$addressType] = $address;
+        }
+        if ($address ['is_primary']) {
+          $primaryAddress = $address;
+        }
+      }
+      foreach ($phones['values'] as $phone) {
+        $locationName = array_search($phone ['location_type_id'], $locations);
+        if ($locationName == 'civicrm-' . $addressType || (empty($prefillPhones[$addressType]) && $locationName == 'uc-' . $addressType)) {
+          $prefillPhones[$addressType] = $phone;
+        }
+        if ($phone['is_primary']) {
+          $primaryPhone = $phone;
+        }
+      }
+      if (empty($prefillAddresses[$addressType]) && ! empty($primaryAddress)) {
+        $prefillAddresses[$addressType] = $primaryAddress;
+      }
+      if (empty($prefillPhones[$addressType]) && ! empty($primaryAddress)) {
+        $prefillPhones[$addressType] = $primaryPhone;
+      }
+    }
+  }
+  catch (CiviCRM_API3_Exception $e) {
+    watchdog('uc_civicrm', 'uc_civicrm_form_alter:' . $e->getMessage(), array(), WATCHDOG_ERROR);
+    return;
+  }
+
+    /*
+   * In the case of ubercarts checkout form auto populate the billing pane information with the appropriate user billing address
+   */
+    // probably don't need this
+  foreach ($addressTypes as $addressType) {
+    $pane = &$form['panes'][$addressType];
+    $pane[$addressType . '_first_name']['#default_value'] = CRM_Utils_Array::value('first_name', $contact);
+    $pane[$addressType . '_last_name']['#default_value'] = CRM_Utils_Array::value('last_name', $contact);
+
+    if (!empty($prefillAddresses[$addressType])) {
+      $prefill = $prefillAddresses[$addressType];
+      $pane[$addressType . '_company']['#default_value'] = CRM_Utils_Array::value('address_name', $prefill);
+      $pane[$addressType . '_street1']['#default_value'] = CRM_Utils_Array::value('street_address', $prefill);
+      $pane[$addressType . '_street2']['#default_value'] = CRM_Utils_Array::value('supplemental_address_1', $prefill);
+      $pane[$addressType . '_city']['#default_value'] = CRM_Utils_Array::value('city', $prefill);
+      $pane[$addressType . '_postal_code']['#default_value'] = CRM_Utils_Array::value('postal_code', $prefill);
+
+
+      // set state
+      $stateName = _uc_civicrm_get_option_name('stateProvince', CRM_Utils_Array::value('state_province_id', $prefill));
+      $stateOption = array_search($stateName, array_map('strtolower', $pane[$addressType . 'state_province']['#options']));
+      $pane[$addressType . '_state_province']['#default_value'] = $stateOption;
+
+      // set counrty
+      $countryName = _uc_civicrm_get_option_name('country', CRM_Utils_Array::value('country', $prefill));
+      $countryOption = array_search($countryName, array_map('strtolower', $pane[$addressType . '_country']['#options']));
+      $pane[$addressType . '_country']['#default_value'] = $countryOption;
+    }
+    if (!empty($prefillPhones[$addressType])) {
+      $prefill = $prefillPhones[$addressType];
+      $pane[$addressType . '_phone']['#default_value'] = CRM_Utils_Array::value('phone', $prefill);
+    }
+  }
+}
+
+/**
+ * Get available locations (pref set types by variable in future instead of hard-coding types
+ * @return array
+ */
+function _uc_civicrm_get_locations() {
+  $locationTypes = civicrm_api3('phone', 'getoptions', array('field' => 'location_type_id'));
+  $locations = array(
+    'civicrm-billing' => array_search('Billing', $locationTypes),
+    'uc-billing' => array_search('Ubercart_Billing', $locationTypes),
+    'civicrm-delivery' => array_search('Postal', $locationTypes),
+    'uc-delivery' => array_search('Ubercart_Shipping', $locationTypes),
+  );
+  return $locations;
+}
+
+/**
+ * Get lower case state name from id
+ * in 4.4 & above getoptions is better than constant get - but not supported in 4.2, 4.3
+ * @param $id stateprovince id
+ * @return string
+ */
+function _uc_civicrm_get_option_name($option, $id, $fn = 'strtolower') {
+  $names = civicrm_api3('constant', 'get', array('name' => $option));
+  return $fn($names['values'][$id]);
+}
