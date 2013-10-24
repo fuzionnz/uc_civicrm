@@ -318,9 +318,10 @@ function _uc_civicrm_add_update_contact($cid, $order) {
   $contact['contact_type'] = 'Individual';
   $contact['email'] = $order->primary_email;
   if (empty($contact['source'])) { $contact['source'] = 'Ubercart purchase'; }
+  $contact['version'] = 3;
   // Create contact or update existing contact
   if ( $contactStatus == 'new' && !$contactInfo['values'][$cid]['first_name'] && !$contactInfo['values'][$cid]['last_name']) {
-    $result = civicrm_contact_add($contact);
+    $result = civicrm_api('contact', 'create', $contact);
 if (!empty($result['is_error'])) {
    watchdog('uc_civicrm', 'civicrm_contact_add():' . $rc['error_message'], array(), WATCHDOG_ERROR);
    return FALSE;
