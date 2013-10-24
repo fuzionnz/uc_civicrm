@@ -786,3 +786,22 @@ function _uc_civicrm_get_option_name($option, $id, $fn = 'strtolower') {
   $names = civicrm_api3('constant', 'get', array('name' => $option));
   return $fn($names['values'][$id]);
 }
+
+/**
+ * Cal shipping for on prefill
+ * https://drupal.org/node/1664858
+ * @param unknown $form
+ * @param unknown $form_state
+ * @param unknown $form_id
+ */
+function add_autocalc_shipping_js(){
+  drupal_add_js('$(document).ready(function(){
+      $("input[id*=quote-button]").click().hide();
+      $("#edit-panes-delivery-delivery-zone-wrapper").change(function(){
+        $("input[id*=quote-button]").click();
+      });
+      $("#edit-panes-delivery-delivery-country").change(function(){
+        $("input[id*=quote-button]").click();
+      });
+    });', 'inline');
+}
