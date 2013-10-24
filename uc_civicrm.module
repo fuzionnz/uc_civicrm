@@ -328,10 +328,10 @@ function uc_civicrm_ca_action() {
 
   $order_arg = array('#entity' => 'uc_order', '#title'  => t('Order'),);
 
-  $actions['uc_civicrm_order_to_civicrm'] = array(
+  $actions['uc_civicrm_action_update_contact'] = array(
     '#title'     => t('Inform CiviCRM upon order submission'),
     '#category'  => t('Order'),
-    '#callback'  => 'uc_civicrm_action_order_to_civicrm',
+    '#callback'  => 'uc_civicrm_action_update_contact',
     '#arguments' => array('order' => $order_arg,),
   );
 
@@ -356,12 +356,11 @@ function uc_civicrm_ca_action() {
  * @param $order
  *   Order
  */
-function uc_civicrm_action_order_to_civicrm($order) {
+function uc_civicrm_action_update_contact($order) {
   global $user;
 
   if (!module_exists('civicrm')) { return; }
   civicrm_initialize();
-  require_once 'CRM/Core/BAO/UFMatch.php';
   require_once 'api/v2/Contact.php';
 
   $cid = _uc_civicrm_get_cid($order);
@@ -375,14 +374,6 @@ function uc_civicrm_action_order_to_civicrm($order) {
     watchdog('uc_civicrm', '_uc_civicrm_add_update_contact() returned '. $cid, array(), WATCHDOG_ERROR);
     return;
   }
-
-  // This is commented out because we don't want contributions created for each product sale
-  //$rc = _uc_civicrm_add_contribution($cid, $order);
-  //if ($rc === false) {
-  //  watchdog('uc_civicrm', '_uc_civicrm_add_contribution() returned '. $cid, array(), WATCHDOG_ERROR);
-  //  return;
-  //}
-
   _uc_civicrm_add_to_groups($cid);
 }
 
