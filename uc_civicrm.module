@@ -151,7 +151,7 @@ function uc_civicrm_action_order_civicrm($order, $is_new = TRUE) {
     if ($cid === FALSE) { return; }
 
     $cid = _uc_civicrm_add_update_contact($cid, $order);
-	
+
     if ($cid === FALSE) { return; }
 
     // add the contribution record
@@ -197,7 +197,7 @@ function _uc_civicrm_add_to_groups($cid) {
   // No groups specified
   $groups = variable_get('uc_civicrm_groups', '');
   if ($groups == '') { return; }
-  
+
   foreach ($groups as $id => $key) {
     if ($key != 0) {
       $params = array('contact_id' => $cid, 'group_id' => $key);
@@ -241,7 +241,7 @@ function _uc_civicrm_get_cid($order) {
   }
 
   // No matches found, so we will need to create a contact.
-  if (count($contact) == 0) { return 0; }  
+  if (count($contact) == 0) { return 0; }
   $cid = array_shift($contact);
   return $cid;
 }
