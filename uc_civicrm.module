@@ -729,10 +729,9 @@ function uc_civicrm_form_alter(&$form, $form_state, $form_id){
     $pane = &$form['panes'][$addressType];
     $pane[$addressType . '_first_name']['#default_value'] = CRM_Utils_Array::value('first_name', $contact);
     $pane[$addressType . '_last_name']['#default_value'] = CRM_Utils_Array::value('last_name', $contact);
-
     if (!empty($prefillAddresses[$addressType])) {
       $prefill = $prefillAddresses[$addressType];
-      $pane[$addressType . '_company']['#default_value'] = CRM_Utils_Array::value('address_name', $prefill);
+      $pane[$addressType . '_company']['#default_value'] = CRM_Utils_Array::value('name', $prefill);
       $pane[$addressType . '_street1']['#default_value'] = CRM_Utils_Array::value('street_address', $prefill);
       $pane[$addressType . '_street2']['#default_value'] = CRM_Utils_Array::value('supplemental_address_1', $prefill);
       $pane[$addressType . '_city']['#default_value'] = CRM_Utils_Array::value('city', $prefill);
