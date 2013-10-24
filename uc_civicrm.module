@@ -295,7 +295,7 @@ function uc_civicrm_ca_predicate() {
     '#status'  => 1,
     '#actions' => array(
       array(
-        '#name'         => 'uc_civicrm_order_to_civicrm',
+        '#name'         => 'uc_civicrm_action_update_contact',
         '#title'        => t('Copy order information to CiviCRM'),
         '#argument_map' => array('order' => 'order',),
       ),
@@ -359,10 +359,9 @@ function uc_civicrm_ca_action() {
 function uc_civicrm_action_update_contact($order) {
   global $user;
 
-  if (!module_exists('civicrm')) { return; }
-  civicrm_initialize();
-  require_once 'api/v2/Contact.php';
-
+  if (!civicrm_initialize(TRUE)) {
+    return;
+  }
   $cid = _uc_civicrm_get_cid($order);
   if ($cid === false) {
     watchdog('uc_civicrm', '_uc_civicrm_get_cid() returned '. $cid, array(), WATCHDOG_ERROR);
