@@ -748,6 +748,10 @@ function uc_civicrm_form_alter(&$form, $form_state, $form_id){
       $countryName = _uc_civicrm_get_option_name('country', CRM_Utils_Array::value('country_id', $prefill));
       $countryOption = array_search($countryName, array_map('strtolower', $pane[$addressType . '_country']['#options']));
       $pane[$addressType . '_country']['#default_value'] = $countryOption;
+      //
+      if($addressType == 'delivery') {
+        add_autocalc_shipping_js();
+      }
     }
     if (!empty($prefillPhones[$addressType])) {
       $prefill = $prefillPhones[$addressType];
