@@ -50,7 +50,7 @@ function uc_civicrm_menu() {
 
   $items = array();
   $items['admin/store/civicrm/customer/orders/%'] = array(
-    'title'            => t('CiviCRM'),
+    'title'            => 'CiviCRM',
     'page callback'    => 'uc_civicrm_contact_transaction',
     'page arguments'   => array(5),
     'access arguments' => array('administer CiviCRM'),
