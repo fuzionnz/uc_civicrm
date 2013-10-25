@@ -238,6 +238,12 @@ function uc_civicrm_ca_action() {
     '#arguments' => array('order' => $order_arg,),
   );
 
+  $actions['uc_civicrm_create_activity'] = array(
+      '#title'     => t('Create CiviCRM activity'),
+      '#category'  => t('Order'),
+      '#callback'  => 'uc_civicrm_create_activity',
+      '#arguments' => array('order' => $order_arg,),
+  );
   return $actions;
 }
 
@@ -771,7 +777,6 @@ function uc_civicrm_create_activity_form($form_state, $settings = array()) {
 
   return $form;
 }
-
 
 /**
  * Syncronizes the status of an order from Ubercart to CiviCRM
