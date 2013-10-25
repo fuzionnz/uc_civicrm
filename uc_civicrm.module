@@ -129,6 +129,55 @@ function uc_civicrm_admin() {
 }
 
 
+
+/**
+ * Implementation of Ubercart conditional action hook_ca_action().
+ */
+function uc_civicrm_ca_action() {
+  if (!module_exists('civicrm')) { return; }
+
+  $order_arg = array('#entity' => 'uc_order', '#title'  => t('Order'),);
+
+  $actions['uc_civicrm_create_activity'] = array(
+      '#title'     => t('Create CiviCRM activity'),
+      '#category'  => t('Order'),
+      '#callback'  => 'uc_civicrm_create_activity',
+      '#arguments' => array('order' => $order_arg,),
+  );
+  return $actions;
+}
+
+
+/**
+ * Callback to inform CiviCRM on order complete
+ *
+ * Called when the conditional action trigger 'uc_checkout_complete'
+ * is pulled, with the order information.  Merge the information
+ * in the order into the CiviCRM contact database.
+ *
+ * @param $order
+ *   Order
+ */
+function uc_civicrm_action_update_contact($order) {
+  global $user;
+
+  if (!civicrm_initialize(TRUE)) {
+    return;
+  }
+  $cid = _uc_civicrm_get_cid($order);
+  if ($cid === false) {
+    watchdog('uc_civicrm', '_uc_civicrm_get_cid() returned '. $cid, array(), WATCHDOG_ERROR);
+    return;
+  }
+
+  $cid = _uc_civicrm_add_update_contact($cid, $order);
+  if ($cid === false) {
+    watchdog('uc_civicrm', '_uc_civicrm_add_update_contact() returned '. $cid, array(), WATCHDOG_ERROR);
+    return;
+  }
+  _uc_civicrm_add_to_groups($cid);
+}
+
 /**
  * Called when the an order is created or changed. Creates a new order or
  * updates an existing one.
@@ -571,6 +620,60 @@ function _uc_civicrm_map_contribution_status($orderStatus) {
   }
 
   return $id;
+}
+/**
+ * Create activity in Civi
+ */
+function uc_civicrm_create_activity($order, $arguments) {
+  if(!civicrm_initialize(TRUE)) {
+    return;
+  }
+  try{
+    civicrm_api3('activity', 'create', $arguments);
+  }
+  catch(CiviCRM_API3_Exception $e) {
+    drupal_set_message('activity creation failed ' . $e->getmessage());
+    watchdog('uc_civicrm', 'activity creation failed ' . $e->getmessage());
+  }
+}
+
+/**
+ * Create activity in Civi
+ */
+function uc_civicrm_create_activity_form($form_state, $settings = array()) {
+  if(!civicrm_initialize(TRUE)) {
+    return;
+  }
+  $form = array();
+  $activityTypes = civicrm_api3('constant', 'get', array('name' => 'activityType'));
+  asort($activityTypes['values']);
+  $activityStatuses = civicrm_api3('constant', 'get', array('name' => 'activityStatus'));
+  asort($activityStatuses['values']);
+  $form['activity_type_id'] = array(
+    '#type' => 'select',
+    '#title' => t('Activity Type'),
+    '#options' => $activityTypes['values'],
+    '#required' => TRUE,
+    '#description' => t('Type of Activity to Create'),
+    '#default_value' => isset($settings['activity_type_id']) ? $settings['activity_type_id'] : NULL,
+  );
+  $form['activity_status_id'] = array(
+    '#type' => 'select',
+    '#title' => t('Activity Status'),
+    '#options' => $activityStatuses['values'],
+    '#required' => TRUE,
+    '#description' => t('Status of Activity'),
+    '#default_value' => isset($settings['activity_status_id']) ? $settings['activity_status_id'] : array_search(ts('Scheduled'), $activityStatuses['values']),
+  );
+  $form['assignee_contact_id'] = array(
+    '#type' => 'textfield',
+    '#required' => TRUE,
+    '#title' => t('Enter the contact you wish the activity to be assigned to'),
+    '#description' => t('The activity will be assigned to the person with this contact id'),
+    '#default_value' => isset($settings['assignee_contact_id']) ? $settings['assignee_contact_id'] : NULl,
+  );
+
+  return $form;
 }
 
 
