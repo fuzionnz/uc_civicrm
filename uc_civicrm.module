@@ -730,6 +730,9 @@ function uc_civicrm_create_activity($order, $arguments) {
   if(!civicrm_initialize(TRUE)) {
     return;
   }
+  if(user_is_logged_in() == FALSE) {
+    return;
+  }
   try{
     civicrm_api3('activity', 'create', $arguments);
   }
@@ -906,7 +909,7 @@ function _uc_civicrm_customer_orders($uid) {
  */
 function uc_civicrm_form_alter(&$form, $form_state, $form_id){
   $forms = array('uc_cart_checkout_form');
-  if(!in_array($form_id, $forms) || !civicrm_initialize()) {
+  if(!in_array($form_id, $forms) || !civicrm_initialize() || (user_is_logged_in() == FALSE)) {
     return;
   }
   /*
