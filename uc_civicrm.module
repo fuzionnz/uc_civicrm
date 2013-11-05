@@ -93,14 +93,14 @@ function uc_civicrm_contact_transaction($uid, $snippet = TRUE) {
 function uc_civicrm_admin() {
   if (!module_exists('civicrm')) { return; }
   if (!civicrm_initialize()) { return; }
-  require_once 'api/v2/Group.php';
-  $params = array();
-  $groups = civicrm_group_get($params);
+
+  $groups = civicrm_api3('group', 'get', array());
 
   $options = array();
-  foreach ($groups as $group) { $options[$group['id']] = $group['title']; }
-//Modified by BOT - 1st July, 2013
-  natsort($options);
+  foreach ($groups['values'] as $group) {
+    $options[$group['id']] = $group['title']; }
+    //Modified by BOT - 1st July, 2013
+    natsort($options);
 
   // Get contribution types
   $sql = "SELECT id, name FROM civicrm_contribution_type WHERE is_active = 1";
