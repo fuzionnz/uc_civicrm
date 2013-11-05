@@ -505,7 +505,7 @@ function _uc_civicrm_add_update_contact($cid, $order) {
 
   $contact = array();
   if ($cid != 0) {
-    try{
+    try {
       $params = array(
         'contact_id' => $cid,
         'return' => array('id', 'source', 'first_name', 'last_name',)
@@ -1090,10 +1090,9 @@ function uc_civicrm_form_alter(&$form, $form_state, $form_id){
     return;
   }
 
-    /*
-   * In the case of ubercarts checkout form auto populate the billing pane information with the appropriate user billing address
-   */
-    // probably don't need this
+
+   //In the case of Ubercart's checkout form auto-populate the delivery and billing pane information with the appropriate addresses.
+   
   foreach ($addressTypes as $addressType) {
     $pane = &$form['panes'][$addressType];
     $pane[$addressType . '_first_name']['#default_value'] = CRM_Utils_Array::value('first_name', $contact);
