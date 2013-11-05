@@ -103,7 +103,7 @@ function uc_civicrm_admin() {
   // Get contribution types
   $codeVersion = explode('.', CRM_Utils_System::version());
   $sql = "SELECT id, name FROM civicrm_contribution_type WHERE is_active = 1";
-  if (version_compare($codeVersion[0] . '.' . $codeVersion[1], 4.3) <= 0) {
+  if (version_compare($codeVersion[0] . '.' . $codeVersion[1], 4.3) >= 0) {
     $sql = "SELECT id, name FROM civicrm_financial_type WHERE is_active = 1";
   }
 
