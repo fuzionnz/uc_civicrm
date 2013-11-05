@@ -428,7 +428,7 @@ if (!empty($result['is_error'])) {
  }
 }
   // Location
-  $loc_types = CRM_Core_PseudoConstant::locationType();
+  $loc_types = _uc_get_location_type_options();
   try {
     $uc_billing = array_search( 'Ubercart_Billing', $loc_types);
     $uc_shipping = array_search('Ubercart_Shipping', $loc_types);
@@ -998,6 +998,18 @@ function _uc_civicrm_get_option_name($option, $id, $fn = 'strtolower') {
   return $fn($names['values'][$id]);
 }
 
+  /**
+   * wrapper for getOptions / pseudoconstant to get contact type options
+   */
+  function _uc_get_location_type_options(){
+    if(method_exists('CRM_Core_PseudoConstant', 'locationType')){
+      return CRM_Core_PseudoConstant::locationType();
+    }
+    else{
+      $result = civicrm_api3('address', 'getoptions', array('field' => 'location_type_id'));
+      return $result['values'];
+    }
+  }
 /**
  * Cal shipping for on prefill
  * https://drupal.org/node/1664858
