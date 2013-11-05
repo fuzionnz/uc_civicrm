@@ -251,7 +251,6 @@ function uc_civicrm_action_order_civicrm($order, $is_new = TRUE) {
   if (!module_exists('civicrm')) { return; }
   if (!civicrm_initialize()) { return; }
   if ($is_new) {
-    require_once 'api/v2/Contact.php';
 
     // Find or create a CiviCRM contact ID for the customer.
     $cid = _uc_civicrm_get_cid($order);
@@ -267,26 +266,20 @@ function uc_civicrm_action_order_civicrm($order, $is_new = TRUE) {
     // add this contact to selected groups
     _uc_civicrm_add_to_groups($cid);
   } else {
-    require_once "api/v2/Contribute.php";
-    $config =& CRM_Core_Config::singleton();
+
+    $config = CRM_Core_Config::singleton();
     $params = array('invoice_id' => $order->order_id . "_uc", 'return.contact_id' => 1, );
-    $result =& civicrm_contribution_search($params);
-    if (civicrm_error($result)) {
-      watchdog('uc_civicrm', 'Error searching for contribution: ' . $result['error_message'], array(), WATCHDOG_ERROR);
-    } else {
-      $contribution = array_shift($result);
+    try{
+      $contribution = civicrm_api3('contribution', 'getsingle', $params);
       $params = array(
-        'id' => $contribution['contribution_id'],
+        'id' => $contribution['id'],
         'contact_id' => $contribution['contact_id'],
         'contribution_status_id' => _uc_civicrm_map_contribution_status($order->order_status),
       );
-      $result =& civicrm_contribution_add($params);
-
-      // @TODO There is a very odd issue here, evidently the system works,
-      // but there are times when this fires before a contribution has been added.
-      if (civicrm_error ($result)) {
-        watchdog('uc_civicrm', 'Error updating contribution: ' . $result['error_message'], array(), WATCHDOG_ERROR);
-      }
+    $result = civicrm_api3('contribution', 'create', $params);
+    }
+    catch(Exception $e) {
+      watchdog('uc_civicrm', 'Error getting/ creating contribution: ' . $e->getMessage(), array(), WATCHDOG_ERROR);
     }
   }
 }
@@ -299,8 +292,6 @@ function uc_civicrm_action_order_civicrm($order, $is_new = TRUE) {
  *   CRM_Contact_BAO_Group object describing the contact to add
  */
 function _uc_civicrm_add_to_groups($cid) {
-  require_once 'api/v2/GroupContact.php';
-
   // No groups specified
   $groups = variable_get('uc_civicrm_groups', '');
   if ($groups == '') { return; }
@@ -308,8 +299,10 @@ function _uc_civicrm_add_to_groups($cid) {
   foreach ($groups as $id => $key) {
     if ($key != 0) {
       $params = array('contact_id' => $cid, 'group_id' => $key);
-      $result = civicrm_group_contact_add($params);
-      if (!empty($result['is_error'])) {
+      try {
+        civicrm_api('group_contact', 'add', $params);
+      }
+      catch (Exception $e) {
         watchdog('uc_civicrm', 'Error adding contact to group: ' . $result['error_message'], array(), WATCHDOG_ERROR);
       }
     }
@@ -339,17 +332,18 @@ function _uc_civicrm_get_cid($order) {
 
   // The customer is anonymous.  Look in the CiviCRM contacts table for a
   // contact that matches the primary email.
-  $params = array('email' => $order->primary_email, 'return.contact_id' => TRUE);
-  $contact = civicrm_contact_search($params);
-  if (!empty($contact['is_error'])) {
-    watchdog('uc_civicrm', 'civicrm_contact_search(): ' . $contact['error_message'], array(), WATCHDOG_ERROR);
-
+  $params = array('email' => $order->primary_email, 'return.contact_id' => TRUE, 'sequential' => 1);
+  try{
+    $contact = civicrm_api('contact', 'get', $params);
+  }
+  catch (Exception $e) {
+    watchdog('uc_civicrm', 'civicrm_contact_search(): ' . $e->getMessage(), array(), WATCHDOG_ERROR);
     return FALSE;
   }
 
   // No matches found, so we will need to create a contact.
   if (count($contact) == 0) { return 0; }
-  $cid = array_shift($contact);
+  $cid = $contact['values'][0]['id'];
   return $cid;
 }
 
