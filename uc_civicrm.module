@@ -931,14 +931,20 @@ function uc_civicrm_form_alter(&$form, $form_state, $form_id){
 
       // set state
       $stateName = _uc_civicrm_get_option_name('stateProvince', CRM_Utils_Array::value('state_province_id', $prefill));
-      $stateOption = array_search($stateName, array_map('strtolower', $pane[$addressType . 'state_province']['#options']));
-      $pane[$addressType . '_state_province']['#default_value'] = $stateOption;
+      $country_name = _uc_civicrm_get_option_name('country', CRM_Utils_Array::value('country_id', $prefill));
+      $country_id = _uc_civicrm_get_country_id($country_name);
+      $pane[$addressType . '_zone'] = uc_zone_select(uc_get_field_name('zone'), NULL, NULL, $country_id, 'name', uc_address_field_required('zone'));
+      if (count($pane[$addressType . '_zone']['#options']) == 1) {
+        $pane[$addressType . '_zone']['#required'] = FALSE;
+      }
+      $stateOption = array_search($stateName, array_map('strtolower', $pane[$addressType . '_zone']['#options']));
+      $pane[$addressType . '_zone']['#default_value'] = $stateOption;
 
-      // set counrty
-      $countryName = _uc_civicrm_get_option_name('country', CRM_Utils_Array::value('country_id', $prefill));
-      $countryOption = array_search($countryName, array_map('strtolower', $pane[$addressType . '_country']['#options']));
+      // Set country.
+      $countryOption = array_search($country_name, array_map('strtolower', $pane[$addressType . '_country']['#options']));
       $pane[$addressType . '_country']['#default_value'] = $countryOption;
-      //
+
+      // Trigger shipping calculation via javascript.
       if($addressType == 'delivery') {
         add_autocalc_shipping_js();
       }
@@ -970,6 +976,19 @@ function _uc_civicrm_get_locations() {
     'uc-delivery' => array_search('Ubercart_Shipping', $locationTypes),
   ), $locations);
   return $locations;
+}
+
+/**
+ * Return Ubercart id for a country.
+ * @param string $country_name
+ *   Country name to lookup, e.g. Australia.
+ * @return string
+ *   Ubercart id used in select options.
+ */
+function _uc_civicrm_get_country_id($country_name) {
+  $country_data = uc_get_country_data(array('country_name' => $country_name));
+  $country = current($country_data);
+  return $country['country_id'];
 }
 
 /**
