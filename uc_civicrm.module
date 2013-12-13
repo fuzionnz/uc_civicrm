@@ -298,7 +298,7 @@ function _uc_civicrm_add_to_groups($cid) {
     if ($key != 0) {
       $params = array('contact_id' => $cid, 'group_id' => $key);
       try {
-        civicrm_api('group_contact', 'add', $params);
+        civicrm_api('group_contact', 'create', $params);
       }
       catch (Exception $e) {
         watchdog('uc_civicrm', 'Error adding contact to group: ' . $result['error_message'], array(), WATCHDOG_ERROR);
