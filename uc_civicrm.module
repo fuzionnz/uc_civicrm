@@ -353,7 +353,7 @@ function _uc_civicrm_add_update_contact($cid, $order) {
   if(!civicrm_initialize(TRUE)){
     return;
   }
-
+  try {
   $contact = array();
   if ($cid != 0) {
     try {
@@ -427,10 +427,10 @@ if (!empty($result['is_error'])) {
  }
 }
   // Location
-  $loc_types = _uc_get_location_type_options();
+  $loc_types = _uc_civicrm_get_locations();
+  $uc_billing = $loc_types['uc-billing'];
+  $uc_shipping = $loc_types['uc-delivery'];
   try {
-    $uc_billing = array_search( 'Ubercart_Billing', $loc_types);
-    $uc_shipping = array_search('Ubercart_Shipping', $loc_types);
     if (!empty($order->delivery_last_name) && !empty($order->delivery_first_name)) {
       $deliveryPhone = array();
       if (!empty($order->delivery_phone)) {
@@ -509,6 +509,10 @@ if (!empty($result['is_error'])) {
   }
 
   return $cid;
+  }
+  catch (Exception $e) {
+    watchdog('uc_civicrm', 'unknown failure <pre>' . $e->getMessage(). print_r($e->getTrace(), TRUE) . "</pre>");
+  }
 }
 
 
@@ -914,7 +918,7 @@ function uc_civicrm_form_alter(&$form, $form_state, $form_id){
 
 
    //In the case of Ubercart's checkout form auto-populate the delivery and billing pane information with the appropriate addresses.
-   
+
   foreach ($addressTypes as $addressType) {
     $pane = &$form['panes'][$addressType];
     $pane[$addressType . '_first_name']['#default_value'] = CRM_Utils_Array::value('first_name', $contact);
@@ -970,9 +974,9 @@ function _uc_civicrm_get_locations() {
   $locationTypes = civicrm_api3('phone', 'getoptions', array('field' => 'location_type_id'));
   $locations = array_merge(array(
     'civicrm-billing' => array_search('Billing', $locationTypes),
-    'uc-billing' => array_search('Ubercart_Billing', $locationTypes),
+    'uc-billing' => array_search('Ubercart_Billing', $locationTypes) ? array_search('Ubercart_Billing', $locationTypes) : array_search('Billing', $locationTypes),
     'civicrm-delivery' => array_search('Postal', $locationTypes),
-    'uc-delivery' => array_search('Ubercart_Shipping', $locationTypes),
+    'uc-delivery' => array_search('Ubercart_Shipping', $locationTypes) ? array_search('Ubercart_Shipping', $locationTypes) : array_search('Postal', $locationTypes),
   ), $locations);
   return $locations;
 }
