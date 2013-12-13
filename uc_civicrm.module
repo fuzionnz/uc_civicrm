@@ -356,161 +356,161 @@ function _uc_civicrm_add_update_contact($cid, $order) {
     return;
   }
   try {
-  $contact = array();
-  if ($cid != 0) {
-    try {
-      $params = array(
-        'contact_id' => $cid,
-        'return' => array('id', 'source', 'first_name', 'last_name',)
-      );
-      $contact = civicrm_api3('contact', 'getsingle', $params);
-    }
-    catch (CiviCRM_Exception $e) {
-      watchdog('uc_civicrm', 'civicrm_contact_get():' . $e->getMessage(), array(), WATCHDOG_ERROR);
-      return FALSE;
-    }
-  }
-
-  //Determine if the contact is new - added by bot
-  $log = new CRM_Core_DAO_Log();
-  $log->entity_table = 'civicrm_contact';
-  $log->entity_id = $cid;
-  $log->orderBy('modified_date asc');
-  $log->limit(1);
-  $result = CRM_Core_DAO::$_nullObject;
-  if ($log->find(TRUE)) {
-    $result = array(
-        'id' => $log->modified_id,
-        'date' => $log->modified_date,
-     );
-  }
-  $date = date('Y-m-d H:i:s');
-  $to_time = strtotime($date);
-  $from_time = strtotime($result['date']);
-  $diff = round(abs($to_time - $from_time) / 60,2). " minute";
-  $contactStatus = 'old';
-  if ( $diff < 30 ) {
-    $contactStatus = 'new';
-  }
-
-  $contactParams = array(
-    'id' => $cid,
-    'version' => 3,
-  );
-
-  $contactInfo = civicrm_api( 'contact','get', $contactParams );
-  // Prepare array to update contact via civi API
-  // Assume that if there is a delivery name then that is the contact to add
-  $fname = '';
-  $lname = '';
-  if (!empty($order->delivery_last_name) && !empty($order->delivery_first_name)) {
-    $fname = $order->delivery_first_name;
-    $lname = $order->delivery_last_name;
-  } else {
-    $fname = $order->billing_first_name;
-    $lname = $order->billing_last_name;
-  }
-
-  $contact['last_name'] = $lname;
-  $contact['first_name'] = $fname;
-  $contact['sort_name'] = "{$lname}, {$fname}";
-  $contact['display_name'] = "{$fname} {$lname}";
-  $contact['contact_type'] = 'Individual';
-  $contact['email'] = $order->primary_email;
-  if (empty($contact['source'])) { $contact['source'] = 'Ubercart purchase'; }
-  $contact['version'] = 3;
-  // Create contact or update existing contact
-  if ( $contactStatus == 'new' && !$contactInfo['values'][$cid]['first_name'] && !$contactInfo['values'][$cid]['last_name']) {
-    $result = civicrm_api('contact', 'create', $contact);
-
-if (!empty($result['is_error'])) {
-   watchdog('uc_civicrm', 'civicrm_contact_add():' . $rc['error_message'], array(), WATCHDOG_ERROR);
-   return FALSE;
- }
-}
-  // Location
-  $loc_types = _uc_civicrm_get_locations();
-  $uc_billing = $loc_types['uc-billing'];
-  $uc_shipping = $loc_types['uc-delivery'];
-  try {
-    if (!empty($order->delivery_last_name) && !empty($order->delivery_first_name)) {
-      $deliveryPhone = array();
-      if (!empty($order->delivery_phone)) {
-        $deliveryPhone = array(
-          'phone' => $order->delivery_phone,
-          'phone_type_id' => 1,
-          'location_type_id' => $uc_shipping,
+    $contact = array();
+    if ($cid != 0) {
+      try {
+        $params = array(
           'contact_id' => $cid,
+          'return' => array('id', 'source', 'first_name', 'last_name',)
         );
-        civicrm_api3('phone', 'create', $deliveryPhone);
+        $contact = civicrm_api3('contact', 'getsingle', $params);
       }
-
-      $countries = uc_get_country_data(array('country_id' => $order->delivery_country));
-      $address = array(
-        'location_type_id'       => $uc_shipping,
-        'city'                   => $order->delivery_city,
-        'state_province'         => uc_get_zone_code($order->delivery_zone),
-        'postal_code'            => $order->delivery_postal_code,
-        'name'                   => $order->delivery_company,
-        'street_address'         => $order->delivery_street1,
-        'supplemental_address_1' => $order->delivery_street2,
-        'country'                => $countries[0]['country_iso_code_2'],
-        'contact_id' => $cid
-      );
-    }
-
-      civicrm_api3('address', 'create', $address);
-    }
-    catch (CiviCRM_Exception $e) {
-      watchdog('uc_civicrm', 'uc_civicrm_add_update_contact:' . $e->getMessage(), array(), WATCHDOG_ERROR);
-      if(strpos($e->getMessage() == 'Invalid Location Type(s) : Ubercart_Shipping')  !== FALSE) {
-        try {
-          civicrm_api3('option_group', 'get', array('name' => 'location_type', 'api.option_value.create' => array('name' => 'Ubercart_Shipping')));
-          civicrm_api3('address', 'create', $address);
-        }
-        catch (CiviCRM_Exception $e2) {
-          watchdog('uc_civicrm', 'civicrm_location_update(): ' . $e2->getMessage(), array(), WATCHDOG_ERROR);
-        }
+      catch (CiviCRM_Exception $e) {
+        watchdog('uc_civicrm', 'civicrm_contact_get():' . $e->getMessage(), array(), WATCHDOG_ERROR);
+        return FALSE;
       }
     }
 
-  // Billing phone
-  $billingPhone = array();
-  if (!empty($order->billing_phone)) {
-    $billingPhone = array(
-      'phone' => $order->billing_phone,
-      'is_primary' => FALSE,
-      'phone_type_id' => 1,
-      'location_type_id' => $uc_billing,
-      'contact_id' => $cid,
+    //Determine if the contact is new - added by bot
+    $log = new CRM_Core_DAO_Log();
+    $log->entity_table = 'civicrm_contact';
+    $log->entity_id = $cid;
+    $log->orderBy('modified_date asc');
+    $log->limit(1);
+    $result = CRM_Core_DAO::$_nullObject;
+    if ($log->find(TRUE)) {
+      $result = array(
+          'id' => $log->modified_id,
+          'date' => $log->modified_date,
+       );
+    }
+    $date = date('Y-m-d H:i:s');
+    $to_time = strtotime($date);
+    $from_time = strtotime($result['date']);
+    $diff = round(abs($to_time - $from_time) / 60,2). " minute";
+    $contactStatus = 'old';
+    if ( $diff < 30 ) {
+      $contactStatus = 'new';
+    }
+
+    $contactParams = array(
+      'id' => $cid,
+      'version' => 3,
     );
-    civicrm_api3('phone', 'create', $deliveryPhone);
-  }
 
-  $countries = uc_get_country_data(array('country_id' => $order->billing_country));
-  $address = array(
-      'location_type_id'          => $uc_billing, //Billing', // this assumes the billing address type id == 5
-      'city'                   => $order->billing_city,
-      'state_province'         => uc_get_zone_code($order->billing_zone),
-      'postal_code'            => $order->billing_postal_code,
-      'name'                   => $order->billing_company,
-      'street_address'         => $order->billing_street1,
-      'supplemental_address_1' => $order->billing_street2,
-      'country'                => $countries[0]['country_iso_code_2'],
-      'contact_id' => $cid,
-  );
+    $contactInfo = civicrm_api( 'contact','get', $contactParams );
+    // Prepare array to update contact via civi API
+    // Assume that if there is a delivery name then that is the contact to add
+    $fname = '';
+    $lname = '';
+    if (!empty($order->delivery_last_name) && !empty($order->delivery_first_name)) {
+      $fname = $order->delivery_first_name;
+      $lname = $order->delivery_last_name;
+    } else {
+      $fname = $order->billing_first_name;
+      $lname = $order->billing_last_name;
+    }
 
-  $newBillingLocation = civicrm_api3('address', 'create', $address);
-  if ($newBillingLocation['is_error'] &&
-      strpos($newBillingLocation['error_message'], "Invalid Location Type(s) : Ubercart_Billing") !== FALSE) {
-    $newBillingLocation = civicrm_location_add($params);
-  }
-  // Log the error, but continue.
-  if (civicrm_error($newBillingLocation)) {
-    watchdog('uc_civicrm', 'civicrm_location_update(): ' . $newBillingLocation['error_message'], array(), WATCHDOG_ERROR);
-  }
+    $contact['last_name'] = $lname;
+    $contact['first_name'] = $fname;
+    $contact['sort_name'] = "{$lname}, {$fname}";
+    $contact['display_name'] = "{$fname} {$lname}";
+    $contact['contact_type'] = 'Individual';
+    $contact['email'] = $order->primary_email;
+    if (empty($contact['source'])) { $contact['source'] = 'Ubercart purchase'; }
+    $contact['version'] = 3;
+    // Create contact or update existing contact
+    if ( $contactStatus == 'new' && !$contactInfo['values'][$cid]['first_name'] && !$contactInfo['values'][$cid]['last_name']) {
+      $result = civicrm_api('contact', 'create', $contact);
 
-  return $cid;
+  if (!empty($result['is_error'])) {
+     watchdog('uc_civicrm', 'civicrm_contact_add():' . $rc['error_message'], array(), WATCHDOG_ERROR);
+     return FALSE;
+   }
+  }
+    // Location
+    $loc_types = _uc_civicrm_get_locations();
+    $uc_billing = $loc_types['uc-billing'];
+    $uc_shipping = $loc_types['uc-delivery'];
+    try {
+      if (!empty($order->delivery_last_name) && !empty($order->delivery_first_name)) {
+        $deliveryPhone = array();
+        if (!empty($order->delivery_phone)) {
+          $deliveryPhone = array(
+            'phone' => $order->delivery_phone,
+            'phone_type_id' => 1,
+            'location_type_id' => $uc_shipping,
+            'contact_id' => $cid,
+          );
+          civicrm_api3('phone', 'create', $deliveryPhone);
+        }
+
+        $countries = uc_get_country_data(array('country_id' => $order->delivery_country));
+        $address = array(
+          'location_type_id'       => $uc_shipping,
+          'city'                   => $order->delivery_city,
+          'state_province'         => uc_get_zone_code($order->delivery_zone),
+          'postal_code'            => $order->delivery_postal_code,
+          'name'                   => $order->delivery_company,
+          'street_address'         => $order->delivery_street1,
+          'supplemental_address_1' => $order->delivery_street2,
+          'country'                => $countries[0]['country_iso_code_2'],
+          'contact_id' => $cid
+        );
+      }
+
+        civicrm_api3('address', 'create', $address);
+      }
+      catch (CiviCRM_Exception $e) {
+        watchdog('uc_civicrm', 'uc_civicrm_add_update_contact:' . $e->getMessage(), array(), WATCHDOG_ERROR);
+        if(strpos($e->getMessage() == 'Invalid Location Type(s) : Ubercart_Shipping')  !== FALSE) {
+          try {
+            civicrm_api3('option_group', 'get', array('name' => 'location_type', 'api.option_value.create' => array('name' => 'Ubercart_Shipping')));
+            civicrm_api3('address', 'create', $address);
+          }
+          catch (CiviCRM_Exception $e2) {
+            watchdog('uc_civicrm', 'civicrm_location_update(): ' . $e2->getMessage(), array(), WATCHDOG_ERROR);
+          }
+        }
+      }
+
+    // Billing phone
+    $billingPhone = array();
+    if (!empty($order->billing_phone)) {
+      $billingPhone = array(
+        'phone' => $order->billing_phone,
+        'is_primary' => FALSE,
+        'phone_type_id' => 1,
+        'location_type_id' => $uc_billing,
+        'contact_id' => $cid,
+      );
+      civicrm_api3('phone', 'create', $deliveryPhone);
+    }
+
+    $countries = uc_get_country_data(array('country_id' => $order->billing_country));
+    $address = array(
+        'location_type_id'          => $uc_billing, //Billing', // this assumes the billing address type id == 5
+        'city'                   => $order->billing_city,
+        'state_province'         => uc_get_zone_code($order->billing_zone),
+        'postal_code'            => $order->billing_postal_code,
+        'name'                   => $order->billing_company,
+        'street_address'         => $order->billing_street1,
+        'supplemental_address_1' => $order->billing_street2,
+        'country'                => $countries[0]['country_iso_code_2'],
+        'contact_id' => $cid,
+    );
+
+    $newBillingLocation = civicrm_api3('address', 'create', $address);
+    if ($newBillingLocation['is_error'] &&
+        strpos($newBillingLocation['error_message'], "Invalid Location Type(s) : Ubercart_Billing") !== FALSE) {
+      $newBillingLocation = civicrm_location_add($params);
+    }
+    // Log the error, but continue.
+    if (civicrm_error($newBillingLocation)) {
+      watchdog('uc_civicrm', 'civicrm_location_update(): ' . $newBillingLocation['error_message'], array(), WATCHDOG_ERROR);
+    }
+
+    return $cid;
   }
   catch (Exception $e) {
     watchdog('uc_civicrm', 'unknown failure <pre>' . $e->getMessage(). print_r($e->getTrace(), TRUE) . "</pre>");
