@@ -89,7 +89,7 @@ class UcCiviCRMTestCase extends DrupalTestCase {
     // Unmatch contact ID returns null
     $rc = uc_civicrm_civicrm_links('tabs.contact.activity', 'Contact', 0);
     $this->assertNull($rc);
-        
+
     // Delete the test user from CiviCRM
     $params = array('contact_id' => $cid);
     civicrm_contact_delete($params);
@@ -175,7 +175,7 @@ class UcCiviCRMTestCase extends DrupalTestCase {
       }
     }
     $this->assertTrue($purchasers_found, 'contact not added to group Purchasers');
-        
+
     // Verify that CID has an activity Purchase
     $params = array('contact_id' => $cid);
     $rc = civicrm_activities_get_contact($params);
