@@ -121,6 +121,44 @@ function uc_civicrm_admin() {
     '#options' => $types,
     '#description' => t('Select a contribution type for purchases, making a new type with a name like "Ubercart purchase" is recommended.'),
   );
+  $loc_types = _uc_civicrm_get_locations();
+  $uc_billing = $loc_types['uc-billing'];
+  $uc_delivery = $loc_types['uc-delivery'];
+  $civicrm_billing = $loc_types['civicrm-billing'];
+  $civicrm_delivery = $loc_types['civicrm-delivery'];
+
+  $form['uc_civicrm_locations_civicrm_billing'] = array(
+    '#type' => 'select',
+    '#title' => t('CiviCRM Billing Location Type'),
+    '#default_value' => $civicrm_billing,
+    '#options' => _uc_get_location_type_options(),
+    '#description' => t('Choose Location Type to Prefill Billing Address From On The Checkout Form')
+  );
+
+  $form['uc_civicrm_locations_uc_billing'] = array(
+    '#type' => 'select',
+    '#title' => t('Ubercart Billing Location Type'),
+    '#default_value' => $uc_billing,
+    '#options' => _uc_get_location_type_options(),
+    '#description' => t('Choose Location Type to Save Ubercart Billing Address To')
+  );
+
+  $form['uc_civicrm_locations_civicrm_delivery'] = array(
+    '#type' => 'select',
+    '#title' => t('CiviCRM Delivery Location Type'),
+    '#default_value' => $civicrm_delivery,
+    '#options' => _uc_get_location_type_options(),
+    '#description' => t('Choose Location Type to Prefill Delivery address from'),
+    '#help' => t('This address may be the same or different to the UC address'),
+  );
+
+  $form['uc_civicrm_locations_uc_delivery'] = array(
+    '#type' => 'select',
+    '#title' => t('Ubercart Delivery Location Type'),
+    '#default_value' => $uc_delivery,
+    '#options' => _uc_get_location_type_options(),
+    '#description' => t('Choose Location Type to Save Ubercart Delivery address To')
+  );
 
   $form['uc_civicrm_groups'] = array(
     '#type' => 'checkboxes',
@@ -129,11 +167,8 @@ function uc_civicrm_admin() {
     '#options' => $options,
     '#description' => t('Check to add purchasers to the selected groups')
   );
-
   return system_settings_form($form);
 }
-
-
 /**
  *  Implementation of Ubercart conditional action hook_ca_predicate().
  *
@@ -971,14 +1006,15 @@ function uc_civicrm_form_alter(&$form, $form_state, $form_id){
  * @return array
  */
 function _uc_civicrm_get_locations() {
-  $locations = variable_get('uc_civicrm_locations', array());
   $locationTypes = civicrm_api3('phone', 'getoptions', array('field' => 'location_type_id'));
-  $locations = array_merge(array(
-    'civicrm-billing' => array_search('Billing', $locationTypes),
-    'uc-billing' => array_search('Ubercart_Billing', $locationTypes) ? array_search('Ubercart_Billing', $locationTypes) : array_search('Billing', $locationTypes),
-    'civicrm-delivery' => array_search('Postal', $locationTypes),
-    'uc-delivery' => array_search('Ubercart_Shipping', $locationTypes) ? array_search('Ubercart_Shipping', $locationTypes) : array_search('Postal', $locationTypes),
-  ), $locations);
+  $locationTypes = $locationTypes['values'];
+
+  $locations = array(
+    'civicrm-billing' => variable_get('uc_civicrm_locations_civicrm_billing', array_search('Billing', $locationTypes)),
+    'uc-billing' => variable_get('uc_civicrm_locations_uc_billing', array_search('Ubercart_Billing', $locationTypes) ? array_search('Ubercart_Billing', $locationTypes) : array_search('Billing', $locationTypes)),
+    'civicrm-delivery' => variable_get('uc_civicrm_locations_civicrm_delivery', array_search('Postal', $locationTypes)),
+    'uc-delivery' => variable_get('uc_civicrm_locations_uc_delivery', array_search('Ubercart_Shipping', $locationTypes) ? array_search('Ubercart_Shipping', $locationTypes) : array_search('Postal', $locationTypes)),
+  );
   return $locations;
 }
 
