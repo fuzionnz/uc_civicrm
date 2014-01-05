@@ -538,7 +538,7 @@ function _uc_civicrm_add_update_contact($cid, $order) {
         if (!empty($order->{$address_type . '_last_name'}) && !empty($order->{$address_type . '_first_name'})) {
           $countries = uc_get_country_data(array('country_id' => $order->{$address_type . '_country'}));
           $address = array(
-            'location_type_id'       => ${'uc' . $address_type},
+            'location_type_id'       => ${'uc_' . $address_type},
             'city'                   => $order->{$address_type . '_city'},
             'state_province'         => uc_get_zone_code($order->{$address_type . 'delivery_zone'}),
             'postal_code'            => $order->{$address_type . '_postal_code'},
