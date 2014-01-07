@@ -906,14 +906,13 @@ function _uc_civicrm_customer_orders($uid) {
     ORDER BY created DESC
     LIMIT 50
   ";
-  $result = db_query($query, $uid);
+  $result = db_query($query, array($uid));
   $html = "<table><tr>
     <td>" . t('View') . "</td>
     <td>" . t('Order ID') . "</td>
     <td>" . t('Date') . "</td>
     <td>" . t('Billing name') . "</td>
     <td>" . t('Shipping name') . "</td>
-    <td>" .  t('Items') . "</td>
     <td>" . t('Total') . "</td>
     <tr>";
 
@@ -930,10 +929,10 @@ function _uc_civicrm_customer_orders($uid) {
     ));
     $bname = drupal_ucfirst($order->billing_first_name) . ' ' . drupal_ucfirst($order->billing_last_name);
     $sname = drupal_ucfirst($order->delivery_first_name) . ' ' . drupal_ucfirst($order->delivery_last_name);
-    $item_count = db_result("SELECT COUNT(*) FROM {uc_order_products} WHERE order_id = :order_id", array(':order_id' => $order->order_id));
+
 
     $totals['orders'] += 1;
-    $totals['items'] += $item_count;
+
     $totals['total'] += $order->order_total;
 
     $html .= "<tr>
@@ -942,7 +941,6 @@ function _uc_civicrm_customer_orders($uid) {
       <td>" .  format_date($order->created, 'uc_store') . "</td>
       <td>" .  check_plain($bname) . "</td>
       <td>" .  check_plain($sname) . "</td>
-      <td>" .  $item_count['COUNT(*)'] . "</td>
       <td>" .  $order->order_total . "</td><tr>";
   }
   return $html;
