@@ -1,9 +1,14 @@
 This module is an optional part of the Ubercart module and exists to integrate
 Ubercart functions with CiviCRM.
 
-To install this module, copy the uc_civicrm directory and its contents to the
-ubercart/contrib directory, then visit the admin/build/modules page and enable
+
+
+To install this module:
+- Copy the uc_civicrm directory 
+- Then visit the admin/build/modules page and enable
 Ubercart/CiviCRM Integration module in the Ubercart - extra section.
+- Add location types 'Ubercart_Billing' and 'Ubercart_Shipping' in civicrm to store shipping and billing address
+- 
 
 When a customer buys something from the Ubercart store, the name and address
 information they provide is added to CiviCRM. If the customer has a simple
@@ -15,3 +20,5 @@ Then the new or updated contact is added to the 'Purchasers' group or group
 selected in the admin screen. A contribution record is added to the contact's
 history and the 'Purchases' tab on the contact's dashboard entry is populated
 with a link to the contact's order history in Ubercart.
+
+
