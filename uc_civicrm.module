@@ -679,7 +679,6 @@ function _uc_civicrm_add_contribution($cid, &$order) {
 
   $params = array(
     'contact_id' => $cid,
-    'receive_date' => date('Ymd'),
     'total_amount' => $roundedTotal,
     'contribution_type_id' => variable_get('uc_civicrm_contribution_type', ''), // @FIXME this needs a sensible default
     'payment_instrument_id' => _uc_civicrm_map_payment_instrument($order->payment_method),
