@@ -974,6 +974,8 @@ function _uc_civicrm_customer_orders($uid) {
  * @todo is this just one form? we can put it in the fn name can't we
  */
 function uc_civicrm_form_alter(&$form, $form_state, $form_id) {
+  //see https://drupal.org/node/2171425
+  return;
   $forms = array('uc_cart_checkout_form');
   if (!in_array($form_id, $forms) || !civicrm_initialize() || (user_is_logged_in() == FALSE)) {
     return;
@@ -1043,7 +1045,10 @@ function uc_civicrm_form_alter(&$form, $form_state, $form_id) {
       $stateName = _uc_civicrm_get_option_name('stateProvince', CRM_Utils_Array::value('state_province_id', $prefill));
       $country_name = _uc_civicrm_get_option_name('country', CRM_Utils_Array::value('country_id', $prefill));
       $country_id = _uc_civicrm_get_country_id($country_name);
-      $pane[$addressType . '_zone'] = uc_zone_select(uc_get_field_name('zone'), NULL, NULL, $country_id, 'name', uc_address_field_required('zone'));
+      $pane[$addressType . '_zone'] = uc_zone_select(uc_get_field_name('zone'), NULL, $country_id, array(
+          'required' => uc_address_field_required('zone'),
+        )
+      );
       if (count($pane[$addressType . '_zone']['#options']) == 1) {
         $pane[$addressType . '_zone']['#required'] = FALSE;
       }
