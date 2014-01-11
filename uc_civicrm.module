@@ -643,8 +643,8 @@ function _uc_civicrm_create_custom_contribution_fields() {
     'is_searchable'   => 0,
     'is_active'       => 1,
   );
-  $taxField = civicrm_custom_field_create($params);
-  variable_set('uc_civicrm_sales_tax_field_id', $taxField['result']['customFieldId']);
+  $taxField = civicrm_api3('custom_field', 'create', $params);
+  variable_set('uc_civicrm_sales_tax_field_id', $taxField['id']);
 
   $params = array(
     'custom_group_id' => $customGroup['id'],
@@ -656,8 +656,8 @@ function _uc_civicrm_create_custom_contribution_fields() {
     'is_searchable'   => 0,
     'is_active'       => 1,
   );
-  $shippingField = civicrm_custom_field_create($params);
-  variable_set('uc_civicrm_shipping_cost_field_id', $shippingField['result']['customFieldId']);
+  $shippingField = civicrm_api3('custom_field', 'create', $params);
+  variable_set('uc_civicrm_shipping_cost_field_id', $shippingField['id']);
 }
 
 
