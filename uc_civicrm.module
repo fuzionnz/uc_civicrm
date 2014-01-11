@@ -341,20 +341,27 @@ function uc_civicrm_action_order_civicrm($order, $is_new = TRUE) {
     _uc_civicrm_add_to_groups($cid);
   }
   else {
-
-    $config = CRM_Core_Config::singleton();
+    $cid = _uc_civicrm_get_cid($order);
     $params = array('invoice_id' => $order->order_id . "_uc", 'return.contact_id' => 1, );
     try{
       $contribution = civicrm_api3('contribution', 'getsingle', $params);
+      $cid = $contribution['contact_id'];
+      $params['id'] = $contribution['id'];
+    }
+    catch (Exception $e) {
+      //@todo figure out why should this exist??
+      _uc_civicrm_add_contribution($cid, $order);
+      watchdog('uc_civicrm', 'Error getting contribution - but we dont know if this matters: ' . $e->getMessage() . print_r($params, TRUE), array(), WATCHDOG_ERROR);
+    }
+    try {
       $params = array(
-        'id' => $contribution['id'],
-        'contact_id' => $contribution['contact_id'],
+        'contact_id' => $cid,
         'contribution_status_id' => _uc_civicrm_map_contribution_status($order->order_status),
       );
     $result = civicrm_api3('contribution', 'create', $params);
     }
     catch (Exception $e) {
-      watchdog('uc_civicrm', 'Error getting/ creating contribution: ' . $e->getMessage(), array(), WATCHDOG_ERROR);
+      watchdog('uc_civicrm', 'Error creating contribution: ' . $e->getMessage()  . print_r($params, TRUE), array(), WATCHDOG_ERROR);
     }
   }
 }
@@ -502,11 +509,11 @@ function _uc_civicrm_add_update_contact($cid, $order) {
     if (empty($contact['source'])) {
       $contact['source'] = 'Ubercart purchase';
     }
-    $contact['version'] = 3;
+
     // Create contact or update existing contact
     if ( $contactStatus == 'new' && !$contactInfo['values'][$cid]['first_name'] && !$contactInfo['values'][$cid]['last_name']) {
       try {
-        $result = civicrm_api('contact', 'create', $contact);
+        $result = civicrm_api3('contact', 'create', $contact);
         // I didn't use drupal's link fn because from memory it can struggle with CiviCRM urls - not sure with or without 'clean'
         uc_order_comment_save($order->order_id, 0, t('Created new CiviCRM Contact <a href=' .
           CRM_Utils_System::url('civicrm/contact/view', 'reset=1&cid= ' . $result['id']) . "'>" . $result['id'] . '</a>'), 'admin');
@@ -556,7 +563,6 @@ function _uc_civicrm_add_update_contact($cid, $order) {
           $address = array(
             'location_type_id'       => ${'uc_' . $address_type},
             'city'                   => $order->{$address_type . '_city'},
-            'state_province'         => uc_get_zone_code($order->{$address_type . 'delivery_zone'}),
             'postal_code'            => $order->{$address_type . '_postal_code'},
             'name'                   => $order->{$address_type . '_company'},
             'street_address'         => $order->{$address_type . '_street1'},
@@ -564,6 +570,9 @@ function _uc_civicrm_add_update_contact($cid, $order) {
             'country'                => $countries[0]['country_iso_code_2'],
             'contact_id' => $cid
           );
+          if(isset($order->{$address_type . 'delivery_zone'})) {
+            $address['state_provide'] = uc_get_zone_code($order->{$address_type . 'delivery_zone'});
+          }
           foreach ($existing_addresses as $existing) {
             if ($existing['location_type_id'] == ${'uc_' . $address_type}) {
               $address['id'] = $existing['id'];
@@ -697,7 +706,7 @@ function _uc_civicrm_add_contribution($cid, &$order) {
   $params = array(
     'contact_id' => $cid,
     'total_amount' => $roundedTotal,
-    'contribution_type_id' => variable_get('uc_civicrm_contribution_type', ''), // @FIXME this needs a sensible default
+    'contribution_type_id' => variable_get('uc_civicrm_contribution_type', 1), // @FIXME this needs a sensible default
     'payment_instrument_id' => _uc_civicrm_map_payment_instrument($order->payment_method),
     'non_deductible_amount' => 00.00,
     'fee_amount' => 00.00,
@@ -709,14 +718,14 @@ function _uc_civicrm_add_contribution($cid, &$order) {
     'note' => _uc_civicrm_create_detail_string($order),
     "$salesTaxFieldId" => $taxCost,
     "$shippingCostFieldId" => $shippingCost,
-    'version' => 3,
   );
-
-  $contribution = civicrm_api('Contribution', 'create', $params);
-
+  try {
+    $contribution = civicrm_api3('Contribution', 'create', $params);
+  }
+  catch (Exception $e) {
   // Log the error, but continue.
-  if (civicrm_error($contribution)) {
-    watchdog('uc_civicrm', 'civicrm_contribution_add(): ' . $contribution['error_message'], array(), WATCHDOG_ERROR);
+    watchdog('uc_civicrm', 'civicrm_contribution_create(): ' . $e->getMessage()  . print_r($params, TRUE), array(), WATCHDOG_ERROR);
+    return FALSE;
   }
 
   return TRUE;
@@ -850,13 +859,10 @@ function uc_civicrm_syncronize_status($order) {
     return;
   }
   civicrm_initialize();
-  require_once 'CRM/Core/Config.php';
-  $config =& CRM_Core_Config::singleton();
-  require_once "api/v2/Contribute.php";
 
   $searchParams = array('invoice_id' => $order->order_id ."_uc", 'return.contact_id' => 1);
 
-  $result =& civicrm_contribution_search($searchParams);
+  $result = civicrm_api3('contributon', 'get', $searchParams);
 
   if (civicrm_error ($result)) {
     watchdog('uc_civicrm', 'uc_civicrm_syncronize_status() returned: '. $result['error_message'], array(), WATCHDOG_ERROR);
@@ -869,7 +875,7 @@ function uc_civicrm_syncronize_status($order) {
       'contribution_status_id' => _uc_civicrm_map_contribution_status($order->order_status),
     );
 
-    $result =& civicrm_contribution_add($setParams);
+    $result = civicrm_api3('contribution', 'create', $setParams);
   }
 }
 
