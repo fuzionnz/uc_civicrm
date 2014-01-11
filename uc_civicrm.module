@@ -116,15 +116,26 @@ function uc_civicrm_admin() {
 
   // Get contribution types
   $codeVersion = explode('.', CRM_Utils_System::version());
-  $sql = "SELECT id, name FROM civicrm_contribution_type WHERE is_active = 1";
-  if (version_compare($codeVersion[0] . '.' . $codeVersion[1], 4.3) >= 0) {
-    $sql = "SELECT id, name FROM civicrm_financial_type WHERE is_active = 1";
-  }
 
-  $dao = CRM_Core_DAO::executeQuery($sql, array());
-  $types = array(0 => "Select a type...");
-  while ($dao->fetch()) {
-    $types[$dao->id] = $dao->name;
+  if (version_compare($codeVersion[0] . '.' . $codeVersion[1], 4.4) >= 0) {
+    $types = civicrm_api3('contribution', 'getoptions', array('field' => 'financial_type_id'));
+    $types = $types['values'];
+  }
+  elseif (version_compare($codeVersion[0] . '.' . $codeVersion[1], 4.3) >= 0) {
+      $sql = "SELECT id, name FROM civicrm_financial_type WHERE is_active = 1";
+    $dao = CRM_Core_DAO::executeQuery($sql, array());
+    $types = array(0 => "Select a type...");
+    while ($dao->fetch()) {
+      $types[$dao->id] = $dao->name;
+    }
+  }
+  else {
+    $sql = "SELECT id, name FROM civicrm_contribution_type WHERE is_active = 1";
+    $dao = CRM_Core_DAO::executeQuery($sql, array());
+    $types = array(0 => "Select a type...");
+    while ($dao->fetch()) {
+      $types[$dao->id] = $dao->name;
+    }
   }
 
   $form = array();
