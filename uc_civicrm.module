@@ -212,8 +212,9 @@ function uc_civicrm_ca_predicate() {
     '#actions' => array(
       array(
         '#name'         => 'uc_civicrm_action_update_contact',
-        '#title'        => t('Copy order information to CiviCRM'),
+        '#title'        => t('Copy Contact information to CiviCRM'),
         '#argument_map' => array('order' => 'order'),
+        '#description' => t('Update or Create contact in CiviCRM')
       ),
     ),
   );
@@ -399,7 +400,7 @@ function _uc_civicrm_get_cid($order) {
   if (!module_exists('civicrm')) {
     return;
   }
-
+  global $user;
   if ($order->uid != 0) {
     $match = CRM_Core_BAO_UFMatch::synchronizeUFMatch($user, $order->uid, $order->primary_email, 'Drupal', FALSE, 'Individual');
     if (!is_object($match)) {
@@ -1012,7 +1013,7 @@ function uc_civicrm_form_alter(&$form, $form_state, $form_id) {
       if (empty($prefillAddresses[$addressType]) && ! empty($primaryAddress)) {
         $prefillAddresses[$addressType] = $primaryAddress;
       }
-      if (empty($prefillPhones[$addressType]) && ! empty($primaryAddress)) {
+      if (empty($prefillPhones[$addressType]) && ! empty($primaryPhone)) {
         $prefillPhones[$addressType] = $primaryPhone;
       }
     }
