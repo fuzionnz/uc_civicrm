@@ -714,6 +714,7 @@ function _uc_civicrm_add_contribution($cid, &$order) {
     'trxn_id' => $txnId,
     'invoice_id' => $order->order_id . '_uc',
     'source' => _uc_civicrm_create_detail_string($order),
+    'receive_date' => 'now',
     'contribution_status_id' => _uc_civicrm_map_contribution_status($order->order_status),
     'note' => _uc_civicrm_create_detail_string($order),
     "$salesTaxFieldId" => $taxCost,
