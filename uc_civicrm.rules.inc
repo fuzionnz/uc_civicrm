@@ -15,15 +15,15 @@ function uc_civicrm_rules_action_info() {
     'base' => 'uc_civicrm_action_order_civicrm',
     'parameter' => array(
       'order' => array('type' => 'uc_order', 'label' => t('Order')),
-      'is_new' => array('type' => 'boolean', 'label' => t('Is new?'))
+      'is_new' => array('type' => 'boolean', 'label' => t('Is new?')),
     ),
   );
   $actions['uc_civicrm_update_order_civicrm'] = array(
     'label' => t('Update CiviCRM contact record'),
     'base' => 'uc_civicrm_action_order_civicrm',
     'parameter' => array(
-      'order' => array('type' => 'uc_order', 'label' => t('Order'), ),
-      'is_new' => array('type' => 'boolean', 'label' => t('Is new?'))
+      'order' => array('type' => 'uc_order', 'label' => t('Order')),
+      'is_new' => array('type' => 'boolean', 'label' => t('Is new?')),
     ),
   );
   return $actions;
