@@ -342,21 +342,22 @@ function uc_civicrm_action_order_civicrm($order, $is_new = TRUE) {
   }
   else {
     $cid = _uc_civicrm_get_cid($order);
-    $params = array('invoice_id' => $order->order_id . "_uc", 'return.contact_id' => 1, );
+    $params = array('invoice_id' => $order->order_id . "_uc", 'return' => 'contact_id');
     try{
       $contribution = civicrm_api3('contribution', 'getsingle', $params);
       $cid = $contribution['contact_id'];
-      $params['id'] = $contribution['id'];
     }
     catch (Exception $e) {
       //@todo figure out why should this exist??
       _uc_civicrm_add_contribution($cid, $order);
       watchdog('uc_civicrm', 'Error getting contribution - but we dont know if this matters: ' . $e->getMessage() . print_r($params, TRUE), array(), WATCHDOG_ERROR);
+      return;
     }
     try {
       $params = array(
         'contact_id' => $cid,
         'contribution_status_id' => _uc_civicrm_map_contribution_status($order->order_status),
+        'id' => $contribution['id'],
       );
     $result = civicrm_api3('contribution', 'create', $params);
     }
@@ -580,7 +581,7 @@ function _uc_civicrm_add_update_contact($cid, $order) {
             //@todo - don't create if exact match of another - should we make 'exact match' configurable
             elseif (
               $existing['street_address'] == $address['street_address']
-              && $existing['supplemental_address_1'] == $address['supplemental_address_1']
+              && CRM_Utils_Array::value('supplemental_address_1', $existing) == CRM_Utils_Array::value('supplemental_address_1', $address)
               && $existing['city'] == $address['city']
               && $existing['postal_code'] == $address['postal_code']
             ) {
