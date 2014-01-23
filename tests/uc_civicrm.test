@@ -13,7 +13,7 @@ class UcCiviCRMTestCase extends DrupalTestCase {
   /**
    * Get test case info.
    */
-  function get_info() {
+  public static function getInfo() {
     return array(
       'name' => 'Ubercart-CiviCRM',
       'desc' => 'Test integration of Ubercart with CiviCRM. Requires CiviCRM.',
