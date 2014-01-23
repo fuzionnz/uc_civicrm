@@ -6,37 +6,41 @@
  */
 
 /**
- * Unit tests for the uc_civicrm module
+ * Unit tests for the uc_civicrm module.
  */
 class UcCiviCRMTestCase extends DrupalTestCase {
+
+  /**
+   * Get test case info.
+   */
   function get_info() {
     return array(
-        'name' => 'Ubercart-CiviCRM',
-        'desc' => 'Test integration of Ubercart with CiviCRM. Requires CiviCRM.',
-        'group' => 'Ubercart extras',
+      'name' => 'Ubercart-CiviCRM',
+      'desc' => 'Test integration of Ubercart with CiviCRM. Requires CiviCRM.',
+      'group' => 'Ubercart extras',
     );
   }
 
   /**
-   * Set up initial conditions for the tests
+   * Set up initial conditions for the tests.
    */
   public function setup() {
     parent::setUp();
   }
 
   /**
-   * Clean up after test completion
+   * Clean up after test completion.
    */
   public function tearDown() {
     parent::tearDown();
   }
 
   /**
-   * Test uc_civicrm_menu()
+   * Test uc_civicrm_menu().
    */
   public function testUcCiviCRMMenu() {
     if (!module_exists('civicrm')) {
-      $this->fail( "CiviCRM is not installed");
+      $this->fail("CiviCRM is not installed");
       return;
     }
     $rc = uc_civicrm_menu();
@@ -47,11 +51,11 @@ class UcCiviCRMTestCase extends DrupalTestCase {
   }
 
   /**
-   * Test uc_civicrm_help()
+   * Test uc_civicrm_help().
    */
   public function testUcCiviCRMHelp() {
     if (!module_exists('civicrm')) {
-      $this->fail( "CiviCRM is not installed");
+      $this->fail("CiviCRM is not installed");
       return;
     }
     $rc = uc_civicrm_help();
@@ -61,44 +65,44 @@ class UcCiviCRMTestCase extends DrupalTestCase {
   }
 
   /**
-   * Test uc_civicrm_civicrm_links()
+   * Test uc_civicrm_civicrm_links().
    */
   public function testUcCiviCRMCiviCRMLinks() {
     if (!module_exists('civicrm')) {
-      $this->fail( "CiviCRM is not installed");
+      $this->fail("CiviCRM is not installed");
       return;
     }
 
-    // Create a Drupal user
+    // Create a Drupal user.
     $user = $this->drupalCreateUserRolePerm();
 
-    // Get new user's CiviCRM contact ID
+    // Get new user's CiviCRM contact ID.
     require_once 'CRM/Core/BAO/UFMatch.php';
     $cid = CRM_Core_BAO_UFMatch::getContactId($user->uid);
 
-    // Retrieve links for the user's CID
+    // Retrieve links for the user's CID.
     $rc = uc_civicrm_civicrm_links('tabs.contact.activity', 'Contact', $cid);
     $this->assertIsA($rc, 'Array');
     $this->assertIsA($rc[0], 'Array');
     $this->assertEqual($rc[0]['id'], 'purchases');
 
-    // Unrecognized first argument returns null
-    $rc = uc_civicrm_civicrm_links( 'foo.bar.mumble', 'Contact', $cid );
+    // Unrecognized first argument returns null.
+    $rc = uc_civicrm_civicrm_links('foo.bar.mumble', 'Contact', $cid);
     $this->assertNull($rc);
 
-    // Unmatch contact ID returns null
+    // Unmatch contact ID returns null.
     $rc = uc_civicrm_civicrm_links('tabs.contact.activity', 'Contact', 0);
     $this->assertNull($rc);
 
-    // Delete the test user from CiviCRM
+    // Delete the test user from CiviCRM.
     $params = array('contact_id' => $cid);
     civicrm_contact_delete($params);
 
-    // The Drupal user will be deleted in tearDown()
+    // The Drupal user will be deleted in tearDown().
   }
 
   /**
-   * Test uc_civicrm_checkout_complete() & uc_civicrm_contact_transaction()
+   * Test uc_civicrm_checkout_complete() & uc_civicrm_contact_transaction().
    */
   public function testUcCiviCRMUcCheckoutComplete() {
     if (!module_exists('civicrm')) {
@@ -106,14 +110,14 @@ class UcCiviCRMTestCase extends DrupalTestCase {
       return;
     }
 
-    // Create a Drupal user
+    // Create a Drupal user.
     $user = $this->drupalCreateUserRolePerm();
 
-    // Get new user's CiviCRM contact ID
+    // Get new user's CiviCRM contact ID.
     require_once 'CRM/Core/BAO/UFMatch.php';
     $cid = CRM_Core_BAO_UFMatch::getContactId($user->uid);
 
-    //  Create an order from this user
+    // Create an order from this user.
     $order = uc_order_new($user->uid, 'payment_received');
     $order->total = 12.34;
     $delivery_first_name = $this->randomName();
@@ -135,19 +139,19 @@ class UcCiviCRMTestCase extends DrupalTestCase {
     $order->delivery_country = 840;
     uc_civicrm_uc_checkout_complete($order, $user);
     $params = array(
-        'contact_id' => $cid,
-        'return_contact_type' => TRUE,
-        'return_first_name' => TRUE,
-        'return_last_name' => TRUE,
-        'return_street_address' => TRUE,
-        'return_supplemental_address_1' => TRUE,
-        'return_city' => TRUE,
-        'return_postal_code' => TRUE,
-        'return_state_province' => TRUE,
-        'return_country' => TRUE,
-        'return_email' => TRUE,
-        'return_phone' => TRUE);
-    $contacts = civicrm_contact_get( $params );
+      'contact_id' => $cid,
+      'return_contact_type' => TRUE,
+      'return_first_name' => TRUE,
+      'return_last_name' => TRUE,
+      'return_street_address' => TRUE,
+      'return_supplemental_address_1' => TRUE,
+      'return_city' => TRUE,
+      'return_postal_code' => TRUE,
+      'return_state_province' => TRUE,
+      'return_country' => TRUE,
+      'return_email' => TRUE,
+      'return_phone' => TRUE);
+    $contacts = civicrm_contact_get($params);
     $contact = $contacts[$cid];
     $this->assertIsA($contact, 'Array');
     $this->assertEqual($contact['contact_id'], $cid);
@@ -160,14 +164,14 @@ class UcCiviCRMTestCase extends DrupalTestCase {
     $this->assertEqual($contact['postal_code'], $delivery_postal_code);
     $this->assertEqual($contact['state_province'], 'UT');
     $this->assertEqual($contact['country'], 'United States');
-    $this->assertEqual($contact['email'], strtolower( $order->primary_email));
+    $this->assertEqual($contact['email'], strtolower($order->primary_email));
     $this->assertEqual($contact['phone'], $delivery_phone);
 
-    // Verify that CID was added to Purchasers
+    // Verify that CID was added to Purchasers.
     require_once 'api/v2/GroupContact.php';
     $params = array('contact_id' => $cid);
     $rc = civicrm_group_contact_get($params);
-    $this->assertTrue(empty( $rc['is_error']));
+    $this->assertTrue(empty($rc['is_error']));
     $purchasers_found = FALSE;
     foreach ((array) $rc as $group) {
       if ($group['title'] == 'Purchasers') {
@@ -176,7 +180,7 @@ class UcCiviCRMTestCase extends DrupalTestCase {
     }
     $this->assertTrue($purchasers_found, 'contact not added to group Purchasers');
 
-    // Verify that CID has an activity Purchase
+    // Verify that CID has an activity Purchase.
     $params = array('contact_id' => $cid);
     $rc = civicrm_activities_get_contact($params);
     $this->assertTrue(empty($rc['is_error']), "Error return from civicrm_activities_get_contact($cid)");
@@ -188,17 +192,17 @@ class UcCiviCRMTestCase extends DrupalTestCase {
     }
     $this->assertTrue($purchase_found, 'Purchase activity not recorded for contact');
 
-    // Test uc_civicrm_contact_transaction()
-    // verify that there is an order for this contact
+    // Test uc_civicrm_contact_transaction() verify that there is an
+    // order for this contact.
     ob_start();
     uc_civicrm_contact_transaction($user->uid);
     $rc = ob_get_clean();
     $this->assertTrue(preg_match('/View order/', $rc));
 
-    // Delete the test order from Ubercart
+    // Delete the test order from Ubercart.
     uc_order_delete($order->order_id);
 
-    // Delete the test user from CiviCRM
+    // Delete the test user from CiviCRM.
     $params = array('contact_id' => $cid);
     civicrm_contact_delete($params);
 

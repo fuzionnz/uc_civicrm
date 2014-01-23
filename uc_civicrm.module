@@ -6,7 +6,7 @@
  */
 
 /**
- * Implementation of hook_help().
+ * Implements hook_help().
  */
 function uc_civicrm_help($path = 'admin/help#uc_civicrm') {
   if (!module_exists('civicrm')) {
@@ -14,13 +14,12 @@ function uc_civicrm_help($path = 'admin/help#uc_civicrm') {
   }
   switch ($path) {
     case 'admin/help#uc_civicrm':
-      return t('This module integrates Ubercart with CiviCRM. When a customer buys something from the store, the name and address information they provide is added to CiviCRM. Existing contact records will be updated. The new or updated contact is added to a group, activity history record of type \'Purchase\' is added to the contact\'s history and the \'Purchases\' tab on the contact\'s dashboard is populated with a link to their order history.');
+      return t("This module integrates Ubercart with CiviCRM. When a customer buys something from the store, the name and address information they provide is added to CiviCRM. Existing contact records will be updated. The new or updated contact is added to a group, activity history record of type 'Purchase' is added to the contact's history and the 'Purchases' tab on the contact's dashboard is populated with a link to their order history.");
   }
 }
 
-
 /**
- * Implementation of hook_civicrm_tabs().
+ * Implements hook_civicrm_tabs().
  */
 function uc_civicrm_civicrm_tabs(&$tabs, $cid) {
   if (!module_exists('civicrm')) {
@@ -47,9 +46,8 @@ function uc_civicrm_civicrm_tabs(&$tabs, $cid) {
   return $tabs;
 }
 
-
 /**
- * Implementation of hook_menu().
+ * Implements hook_menu().
  */
 function uc_civicrm_menu() {
   if (!module_exists('civicrm')) {
@@ -77,12 +75,12 @@ function uc_civicrm_menu() {
   return $items;
 }
 
-
 /**
  * Callback to expose order information in a CiviCRM tab.
- * (more limited that d7 version of same)
  *
- * @param $uid
+ * (more limited than d7 version of same)
+ *
+ * @param int $uid
  *   Drupal UID for the customer
  */
 function uc_civicrm_contact_transaction($uid, $snippet = TRUE) {
@@ -92,16 +90,15 @@ function uc_civicrm_contact_transaction($uid, $snippet = TRUE) {
 
   $output = _uc_civicrm_customer_orders($uid);
   if ($snippet) {
-    print($output);
+    print $output;
   }
   else {
     return $output;
   }
-  return;
 }
 
 /**
- *  Admin form configuration.
+ * Admin form configuration.
  */
 function uc_civicrm_admin() {
   if (!module_exists('civicrm') || !civicrm_initialize()) {
@@ -112,19 +109,19 @@ function uc_civicrm_admin() {
 
   $options = array();
   foreach ($groups['values'] as $group) {
-    $options[$group['id']] = $group['title']; }
-    //Modified by BOT - 1st July, 2013
-    natsort($options);
+    $options[$group['id']] = $group['title'];
+  }
+  natsort($options);
 
-  // Get contribution types
-  $codeVersion = explode('.', CRM_Utils_System::version());
+  // Get contribution types.
+  $version = explode('.', CRM_Utils_System::version());
 
-  if (version_compare($codeVersion[0] . '.' . $codeVersion[1], 4.4) >= 0) {
+  if (version_compare($version[0] . '.' . $version[1], 4.4) >= 0) {
     $types = civicrm_api3('contribution', 'getoptions', array('field' => 'financial_type_id'));
     $types = $types['values'];
   }
-  elseif (version_compare($codeVersion[0] . '.' . $codeVersion[1], 4.3) >= 0) {
-      $sql = "SELECT id, name FROM civicrm_financial_type WHERE is_active = 1";
+  elseif (version_compare($version[0] . '.' . $version[1], 4.3) >= 0) {
+    $sql = "SELECT id, name FROM civicrm_financial_type WHERE is_active = 1";
     $dao = CRM_Core_DAO::executeQuery($sql, array());
     $types = array(0 => "Select a type...");
     while ($dao->fetch()) {
@@ -159,7 +156,7 @@ function uc_civicrm_admin() {
     '#title' => t('CiviCRM Billing Location Type'),
     '#default_value' => $civicrm_billing,
     '#options' => _uc_get_location_type_options(),
-    '#description' => t('Choose Location Type to Prefill Billing Address From On The Checkout Form')
+    '#description' => t('Choose Location Type to Prefill Billing Address From On The Checkout Form'),
   );
 
   $form['uc_civicrm_locations_uc_billing'] = array(
@@ -167,7 +164,7 @@ function uc_civicrm_admin() {
     '#title' => t('Ubercart Billing Location Type'),
     '#default_value' => $uc_billing,
     '#options' => _uc_get_location_type_options(),
-    '#description' => t('Choose Location Type to Save Ubercart Billing Address To')
+    '#description' => t('Choose Location Type to Save Ubercart Billing Address To'),
   );
 
   $form['uc_civicrm_locations_civicrm_delivery'] = array(
@@ -184,7 +181,7 @@ function uc_civicrm_admin() {
     '#title' => t('Ubercart Delivery Location Type'),
     '#default_value' => $uc_delivery,
     '#options' => _uc_get_location_type_options(),
-    '#description' => t('Choose Location Type to Save Ubercart Delivery address To')
+    '#description' => t('Choose Location Type to Save Ubercart Delivery address To'),
   );
 
   $form['uc_civicrm_groups'] = array(
@@ -192,14 +189,15 @@ function uc_civicrm_admin() {
     '#title' => t('Groups to add purchasers to'),
     '#default_value' => variable_get('uc_civicrm_groups', array()),
     '#options' => $options,
-    '#description' => t('Check to add purchasers to the selected groups')
+    '#description' => t('Check to add purchasers to the selected groups'),
   );
   return system_settings_form($form);
 }
+
 /**
- *  Implementation of Ubercart conditional action hook_ca_predicate().
+ * Implements Ubercart conditional action hook_ca_predicate().
  *
- *  Tell Ubercart to let us know when an order is complete
+ * Tell Ubercart to let us know when an order is complete
  */
 function uc_civicrm_ca_predicate() {
   if (!module_exists('civicrm')) {
@@ -216,7 +214,7 @@ function uc_civicrm_ca_predicate() {
         '#name'         => 'uc_civicrm_action_update_contact',
         '#title'        => t('Copy Contact information to CiviCRM'),
         '#argument_map' => array('order' => 'order'),
-        '#description' => t('Update or Create contact in CiviCRM')
+        '#description' => t('Update or Create contact in CiviCRM'),
       ),
     ),
   );
@@ -238,16 +236,18 @@ function uc_civicrm_ca_predicate() {
   return $predicates;
 }
 
-
 /**
- * Implementation of Ubercart conditional action hook_ca_action().
+ * Implements Ubercart conditional action hook_ca_action().
  */
 function uc_civicrm_ca_action() {
   if (!module_exists('civicrm')) {
     return;
   }
 
-  $order_arg = array('#entity' => 'uc_order', '#title'  => t('Order'));
+  $order_arg = array(
+    '#entity' => 'uc_order',
+    '#title'  => t('Order'),
+  );
 
   $actions['uc_civicrm_action_update_contact'] = array(
     '#title'     => t('Inform CiviCRM upon order submission'),
@@ -264,23 +264,22 @@ function uc_civicrm_ca_action() {
   );
 
   $actions['uc_civicrm_create_activity'] = array(
-      '#title'     => t('Create CiviCRM activity'),
-      '#category'  => t('Order'),
-      '#callback'  => 'uc_civicrm_create_activity',
-      '#arguments' => array('order' => $order_arg),
+    '#title'     => t('Create CiviCRM activity'),
+    '#category'  => t('Order'),
+    '#callback'  => 'uc_civicrm_create_activity',
+    '#arguments' => array('order' => $order_arg),
   );
   return $actions;
 }
 
-
 /**
- * Callback to inform CiviCRM on order complete
+ * Callback to inform CiviCRM on order complete.
  *
  * Called when the conditional action trigger 'uc_checkout_complete'
  * is pulled, with the order information.  Merge the information
  * in the order into the CiviCRM contact database.
  *
- * @param $order
+ * @param object $order
  *   Order
  */
 function uc_civicrm_action_update_contact($order) {
@@ -292,25 +291,25 @@ function uc_civicrm_action_update_contact($order) {
   $cid = _uc_civicrm_get_cid($order);
   if ($cid === FALSE) {
     uc_order_comment_save($order->order_id, 0, t('Failed to Create CiviCRM Contact.'), 'admin');
-    watchdog('uc_civicrm', '_uc_civicrm_get_cid() returned '. $cid, array(), WATCHDOG_ERROR);
+    watchdog('uc_civicrm', '_uc_civicrm_get_cid() returned %cid', array('%cid' => $cid), WATCHDOG_ERROR);
     return;
   }
 
   $cid = _uc_civicrm_add_update_contact($cid, $order);
   if ($cid === FALSE) {
-    watchdog('uc_civicrm', '_uc_civicrm_add_update_contact() returned '. $cid, array(), WATCHDOG_ERROR);
+    watchdog('uc_civicrm', '_uc_civicrm_add_update_contact() returned %cid', array('%cid' => $cid), WATCHDOG_ERROR);
     return;
   }
   _uc_civicrm_add_to_groups($cid);
 }
 
 /**
- * Called when the an order is created or changed. Creates a new order or
- * updates an existing one.
+ * Action called when order updated.
  *
- * @param $order
+ * @param object $order
  *   the order
- * @param $is_new boolean
+ *
+ * @param bool $is_new
  *   TRUE if it's a new order
  */
 function uc_civicrm_action_order_civicrm($order, $is_new = TRUE) {
@@ -336,22 +335,25 @@ function uc_civicrm_action_order_civicrm($order, $is_new = TRUE) {
       return;
     }
 
-    // add the contribution record
+    // Add the contribution record.
     _uc_civicrm_add_contribution($cid, $order);
 
-    // add this contact to selected groups
+    // Add this contact to selected groups.
     _uc_civicrm_add_to_groups($cid);
   }
   else {
     $cid = _uc_civicrm_get_cid($order);
-    $params = array('invoice_id' => $order->order_id . "_uc", 'return.contact_id' => 1, );
-    try{
+    $params = array(
+      'invoice_id' => $order->order_id . "_uc",
+      'return.contact_id' => 1,
+    );
+    try {
       $contribution = civicrm_api3('contribution', 'getsingle', $params);
       $cid = $contribution['contact_id'];
       $params['id'] = $contribution['id'];
     }
     catch (Exception $e) {
-      //@todo figure out why should this exist??
+      // @TODO figure out why should this exist?
       _uc_civicrm_add_contribution($cid, $order);
       watchdog('uc_civicrm', 'Error getting contribution - but we dont know if this matters: ' . $e->getMessage() . print_r($params, TRUE), array(), WATCHDOG_ERROR);
     }
@@ -360,7 +362,7 @@ function uc_civicrm_action_order_civicrm($order, $is_new = TRUE) {
         'contact_id' => $cid,
         'contribution_status_id' => _uc_civicrm_map_contribution_status($order->order_status),
       );
-    $result = civicrm_api3('contribution', 'create', $params);
+      $result = civicrm_api3('contribution', 'create', $params);
     }
     catch (Exception $e) {
       watchdog('uc_civicrm', 'Error creating contribution: ' . $e->getMessage()  . print_r($params, TRUE), array(), WATCHDOG_ERROR);
@@ -368,15 +370,14 @@ function uc_civicrm_action_order_civicrm($order, $is_new = TRUE) {
   }
 }
 
-
 /**
  * Add contact to any specified groups.
  *
- * @param $contact
- *   CRM_Contact_BAO_Group object describing the contact to add
+ * @param int $cid
+ *   Contact ID
  */
 function _uc_civicrm_add_to_groups($cid) {
-  // No groups specified
+  // No groups specified.
   $groups = variable_get('uc_civicrm_groups', '');
   if ($groups == '') {
     return;
@@ -395,15 +396,16 @@ function _uc_civicrm_add_to_groups($cid) {
   }
 }
 
-
 /**
- * Get contact id for the customer.
+ * Get contact id for the order's customer.
  *
- * @param $order
+ * @param object $order
  *   Order
- * @return
- *   false|integer false   => an error occured
- *                 integer => CID if non-zero; must create if zero
+ *
+ * @return false|integer
+ *   > 0: existing contact
+ *   = 0: create new contact
+ *   FALSE: error
  */
 function _uc_civicrm_get_cid($order) {
   if (!module_exists('civicrm')) {
@@ -420,7 +422,11 @@ function _uc_civicrm_get_cid($order) {
 
   // The customer is anonymous.  Look in the CiviCRM contacts table for a
   // contact that matches the primary email.
-  $params = array('email' => $order->primary_email, 'return.contact_id' => TRUE, 'sequential' => 1);
+  $params = array(
+    'email' => $order->primary_email,
+    'return.contact_id' => TRUE,
+    'sequential' => 1,
+  );
   try{
     $contact = civicrm_api('contact', 'get', $params);
   }
@@ -437,9 +443,8 @@ function _uc_civicrm_get_cid($order) {
   return $cid;
 }
 
-
 /**
- *  Add or update contact information
+ * Add or update contact information.
  */
 function _uc_civicrm_add_update_contact($cid, $order) {
   if (!civicrm_initialize(TRUE)) {
@@ -451,7 +456,7 @@ function _uc_civicrm_add_update_contact($cid, $order) {
       try {
         $params = array(
           'contact_id' => $cid,
-          'return' => array('id', 'source', 'first_name', 'last_name')
+          'return' => array('id', 'source', 'first_name', 'last_name'),
         );
         $contact = civicrm_api3('contact', 'getsingle', $params);
       }
@@ -461,7 +466,7 @@ function _uc_civicrm_add_update_contact($cid, $order) {
       }
     }
 
-    //Determine if the contact is new - added by bot
+    // Determine if the contact is new - added by bot.
     $log = new CRM_Core_DAO_Log();
     $log->entity_table = 'civicrm_contact';
     $log->entity_id = $cid;
@@ -478,19 +483,21 @@ function _uc_civicrm_add_update_contact($cid, $order) {
     $to_time = strtotime($date);
     $from_time = strtotime($result['date']);
     $diff = round(abs($to_time - $from_time) / 60, 2) . " minute";
-    $contactStatus = 'old';
-    if ( $diff < 30 ) {
-      $contactStatus = 'new';
+    $contact_status = 'old';
+    if ($diff < 30) {
+      $contact_status = 'new';
     }
 
-    $contactParams = array(
+    $contact_params = array(
       'id' => $cid,
       'version' => 3,
     );
 
-    $contactInfo = civicrm_api('contact', 'get', $contactParams );
-    // Prepare array to update contact via civi API
-    // Assume that if there is a delivery name then that is the contact to add
+    $contact_info = civicrm_api('contact', 'get', $contact_params);
+    // Prepare array to update contact via civi API.
+    //
+    // Assume that if there is a delivery name then that is the
+    // contact to add.
     $fname = '';
     $lname = '';
     if (!empty($order->delivery_last_name) && !empty($order->delivery_first_name)) {
@@ -512,20 +519,19 @@ function _uc_civicrm_add_update_contact($cid, $order) {
       $contact['source'] = 'Ubercart purchase';
     }
 
-    // Create contact or update existing contact
-    if ( $contactStatus == 'new' && !$contactInfo['values'][$cid]['first_name'] && !$contactInfo['values'][$cid]['last_name']) {
+    // Create contact or update existing contact.
+    if ($contact_status == 'new' && !$contact_info['values'][$cid]['first_name'] && !$contact_info['values'][$cid]['last_name']) {
       try {
         $result = civicrm_api3('contact', 'create', $contact);
-        // I didn't use drupal's link fn because from memory it can struggle with CiviCRM urls - not sure with or without 'clean'
-        uc_order_comment_save($order->order_id, 0, t('Created new CiviCRM Contact <a href=' .
-          CRM_Utils_System::url('civicrm/contact/view', 'reset=1&cid= ' . $result['id']) . "'>" . $result['id'] . '</a>'), 'admin');
+        $link = l($result['id'], 'civicrm/contact/view', array('query' => 'reset=1&cid=' . $result['id']));
+        uc_order_comment_save($order->order_id, 0, t('Created new CiviCRM Contact !link', array('!link' => $link)), 'admin');
       }
       catch (Exception $e) {
         watchdog('uc_civicrm', 'civicrm_contact_add():' . $e->getMessage(), array(), WATCHDOG_ERROR);
         return FALSE;
       }
     }
-    // Location
+    // Location.
     $loc_types = _uc_civicrm_get_locations();
     $uc_billing = $loc_types['uc-billing'];
     $uc_delivery = $loc_types['uc-delivery'];
@@ -556,7 +562,11 @@ function _uc_civicrm_add_update_contact($cid, $order) {
           }
           if (!$phone_exists) {
             civicrm_api3('phone', 'create', $phone);
-            uc_order_comment_save($order->order_id, 0, t('Created new CiviCRM Phone of type ' . ${'uc_' . $address_type} . ':' . $phone['phone']), 'admin');
+            $targs = array(
+              '%type' => ${'uc_' . $address_type},
+              '%phone' => $phone['phone'],
+            );
+            uc_order_comment_save($order->order_id, 0, t('Created new CiviCRM Phone of type %type: %phone', $targs), 'admin');
           }
         }
         $address_exists = FALSE;
@@ -570,16 +580,17 @@ function _uc_civicrm_add_update_contact($cid, $order) {
             'street_address'         => $order->{$address_type . '_street1'},
             'supplemental_address_1' => $order->{$address_type . '_street2'},
             'country'                => $countries[0]['country_iso_code_2'],
-            'contact_id' => $cid
+            'contact_id' => $cid,
           );
-          if(isset($order->{$address_type . 'delivery_zone'})) {
+          if (isset($order->{$address_type . 'delivery_zone'})) {
             $address['state_provide'] = uc_get_zone_code($order->{$address_type . 'delivery_zone'});
           }
           foreach ($existing_addresses as $existing) {
             if ($existing['location_type_id'] == ${'uc_' . $address_type}) {
               $address['id'] = $existing['id'];
             }
-            //@todo - don't create if exact match of another - should we make 'exact match' configurable
+            // @TODO Don't create if exact match of another - should
+            // we make 'exact match' configurable.
             elseif (
               $existing['street_address'] == $address['street_address']
               && $existing['supplemental_address_1'] == $address['supplemental_address_1']
@@ -591,36 +602,39 @@ function _uc_civicrm_add_update_contact($cid, $order) {
           }
           if (!$address_exists) {
             civicrm_api3('address', 'create', $address);
-            uc_order_comment_save($order->order_id, 0, t('Created new CiviCRM Address of type ' . ${'uc_' . $address_type} . ' : ' . $address['street_address']), 'admin');
+            $targs = array(
+              '%address_type' => ${'uc_' . $address_type},
+              '%address' => $address['street_address'],
+            );
+            uc_order_comment_save($order->order_id, 0, t('Created new CiviCRM Address of type %address_type: %address', $targs), 'admin');
           }
         }
       }
     }
-
-      catch (CiviCRM_Exception $e) {
-        $msg = 'uc_civicrm_add_update_contact:';
-        if (!empty($address)) {
-          $msg .= " while updating $address_type address " . print_r($address, TRUE);
-        }
-        elseif (!empty($phone)) {
-          $msg .= " while updating $address_type phone " . print_r($phone, TRUE);
-        }
-        watchdog('uc_civicrm', $msg . $e->getMessage(), array(), WATCHDOG_ERROR);
+    catch (CiviCRM_Exception $e) {
+      $msg = 'uc_civicrm_add_update_contact:';
+      if (!empty($address)) {
+        $msg .= " while updating $address_type address " . print_r($address, TRUE);
       }
+      elseif (!empty($phone)) {
+        $msg .= " while updating $address_type phone " . print_r($phone, TRUE);
+      }
+      watchdog('uc_civicrm', $msg . $e->getMessage(), array(), WATCHDOG_ERROR);
+    }
     return $cid;
   }
   catch (Exception $e) {
-    watchdog('uc_civicrm', 'unknown failure <pre>' . $e->getMessage() . print_r($e->getTrace(), TRUE) . "</pre>");
+    drupal_set_message('CiviCRM error.', 'error');
+    watchdog('uc_civicrm', 'CiviCRM error: %message', array('%message' => $e->getMessage()), WATCHDOG_ERROR);
   }
 }
-
 
 /**
  * Creates required contribution fields if they have not already been created.
  */
 function _uc_civicrm_create_custom_contribution_fields() {
-  $groupId = variable_get('uc_civicrm_contribution_group_id', FALSE);
-  if ($groupId != FALSE) {
+  $group_id = variable_get('uc_civicrm_contribution_group_id', FALSE);
+  if ($group_id != FALSE) {
     return;
   }
 
@@ -635,15 +649,15 @@ function _uc_civicrm_create_custom_contribution_fields() {
     'is_active'        => 1,
   );
   try {
-    $customGroup = civicrm_api3('custom_group', 'create', $params);
+    $custom_group = civicrm_api3('custom_group', 'create', $params);
   }
   catch (CiviCRM_API3_Exception $e) {
     watchdog('uc_civicrm', 'civicrm_api -custom group create(): ' . $e->getMessage, array(), WATCHDOG_ERROR);
   }
-  variable_set('uc_civicrm_contribution_group_id', $customGroup['id']);
+  variable_set('uc_civicrm_contribution_group_id', $custom_group['id']);
 
   $params = array(
-    'custom_group_id' => $customGroup['id'],
+    'custom_group_id' => $custom_group['id'],
     'label'           => 'Sales Tax',
     'html_type'       => 'Text',
     'data_type'       => 'String',
@@ -652,11 +666,11 @@ function _uc_civicrm_create_custom_contribution_fields() {
     'is_searchable'   => 0,
     'is_active'       => 1,
   );
-  $taxField = civicrm_api3('custom_field', 'create', $params);
-  variable_set('uc_civicrm_sales_tax_field_id', $taxField['id']);
+  $tax_field = civicrm_api3('custom_field', 'create', $params);
+  variable_set('uc_civicrm_sales_tax_field_id', $tax_field['id']);
 
   $params = array(
-    'custom_group_id' => $customGroup['id'],
+    'custom_group_id' => $custom_group['id'],
     'label'           => 'Shipping Cost',
     'html_type'       => 'Text',
     'data_type'       => 'String',
@@ -665,13 +679,12 @@ function _uc_civicrm_create_custom_contribution_fields() {
     'is_searchable'   => 0,
     'is_active'       => 1,
   );
-  $shippingField = civicrm_api3('custom_field', 'create', $params);
-  variable_set('uc_civicrm_shipping_cost_field_id', $shippingField['id']);
+  $shipping_field = civicrm_api3('custom_field', 'create', $params);
+  variable_set('uc_civicrm_shipping_cost_field_id', $shipping_field['id']);
 }
 
-
 /**
- * Add a contribution record
+ * Add a contribution record.
  *
  * Create any custom fields and get the transaction id. If it doesn't exist,
  * make one up and add the contribution.
@@ -682,51 +695,52 @@ function _uc_civicrm_add_contribution($cid, &$order) {
   }
   _uc_civicrm_create_custom_contribution_fields();
 
-  $payDataAry = uc_payment_load_payments($order->order_id);
-  $payDataAry[0]->data = unserialize($payDataAry[0]->data);
-  $txnId = isset($payDataAry[0]->data['txn_id']) ?
-      $payDataAry[0]->data['txn_id'] : 'TRXN ID NOT AVAILABLE ' . md5($order->order_id);
+  $pay_data = uc_payment_load_payments($order->order_id);
+  $pay_data[0]->data = unserialize($pay_data[0]->data);
+  $txn_id = isset($pay_data[0]->data['txn_id']) ?
+    $pay_data[0]->data['txn_id'] : 'TRXN ID NOT AVAILABLE ' . md5($order->order_id);
 
   // @FIXME Landmine. CiviCRM doesn't seem to accept financial values with
   // precision greater than 2 digits after the decimal.
-  $roundedTotal = round($order->order_total * 100) / 100;
+  $rounded_total = round($order->order_total * 100) / 100;
 
-  $salesTaxFieldId = 'custom_' . variable_get('uc_civicrm_sales_tax_field_id', '');
-  $shippingCostFieldId = 'custom_' . variable_get('uc_civicrm_shipping_cost_field_id', '');
-  $taxCost = '';
-  $shippingCost = '';
+  $sales_tax_field_id = 'custom_' . variable_get('uc_civicrm_sales_tax_field_id', '');
+  $shipping_cost_field_id = 'custom_' . variable_get('uc_civicrm_shipping_cost_field_id', '');
+  $tax_cost = '';
+  $shipping_cost = '';
 
   foreach ($order->line_items as $item) {
     if ($item['type'] == 'tax') {
-      $taxCost = $item['amount'];
+      $tax_cost = $item['amount'];
     }
     elseif ($item['type'] == 'shipping') {
-      $shippingCost = $item['amount'];
+      $shipping_cost = $item['amount'];
     }
   }
 
   $params = array(
     'contact_id' => $cid,
-    'total_amount' => $roundedTotal,
-    'contribution_type_id' => variable_get('uc_civicrm_contribution_type', 1), // @FIXME this needs a sensible default
+    'total_amount' => $rounded_total,
+    // @FIXME this needs a sensible default
+    'contribution_type_id' => variable_get('uc_civicrm_contribution_type', 1),
     'payment_instrument_id' => _uc_civicrm_map_payment_instrument($order->payment_method),
     'non_deductible_amount' => 00.00,
     'fee_amount' => 00.00,
-    'net_amount' => $roundedTotal,
-    'trxn_id' => $txnId,
+    'net_amount' => $rounded_total,
+    'trxn_id' => $txn_id,
     'invoice_id' => $order->order_id . '_uc',
     'source' => _uc_civicrm_create_detail_string($order),
     'receive_date' => 'now',
     'contribution_status_id' => _uc_civicrm_map_contribution_status($order->order_status),
     'note' => _uc_civicrm_create_detail_string($order),
-    "$salesTaxFieldId" => $taxCost,
-    "$shippingCostFieldId" => $shippingCost,
+    "$sales_tax_field_id" => $tax_cost,
+    "$shipping_cost_field_id" => $shipping_cost,
   );
   try {
     $contribution = civicrm_api3('Contribution', 'create', $params);
   }
   catch (Exception $e) {
-  // Log the error, but continue.
+    // Log the error, but continue.
     watchdog('uc_civicrm', 'civicrm_contribution_create(): ' . $e->getMessage()  . print_r($params, TRUE), array(), WATCHDOG_ERROR);
     return FALSE;
   }
@@ -734,45 +748,46 @@ function _uc_civicrm_add_contribution($cid, &$order) {
   return TRUE;
 }
 
-
 /**
- * Maps an Ubercart payment method to a CiviCRM payment instrument
+ * Maps Ubercart payment method to CiviCRM payment instrument.
  *
- * @param string $paymentDevice
- *    An Ubercart payment device
+ * @param string $payment_device
+ *   An Ubercart payment device
+ *
  * @return int
- *    The CiviCRM id of the payment processor
+ *   The CiviCRM id of the payment processor
  */
-function _uc_civicrm_map_payment_instrument($paymentDevice) {
-  // Note that the payment methods for Ubercart are hardcoded in the payment
-  // modules under hook_uc_payment_method(), so anything that's not explicitly a
-  // check or cash has to be a credit card.
+function _uc_civicrm_map_payment_instrument($payment_device) {
+  // Note that the payment methods for Ubercart are hardcoded in the
+  // payment modules under hook_uc_payment_method(), so anything
+  // that's not explicitly a check or cash has to be a credit card.
   $map = array(
     "credit" => 1,
     "cod"    => 3,
     "check"  => 4,
   );
 
-  if (array_key_exists($paymentDevice, $map)) {
-    $id = $map[$paymentDevice];
+  if (array_key_exists($payment_device, $map)) {
+    $id = $map[$payment_device];
   }
   else {
+    // Another Ubercart payment method - good chance this is credit.
     $id = 1;
-  } // Another Ubercart payment method - good chance this is credit.
+  }
 
   return $id;
 }
 
-
 /**
- * Maps an Ubercart order status to a corresponding CiviCRM contribution status
+ * Maps Ubercart order status to CiviCRM contribution status.
  *
- * @param string $orderStatus
- *    An Ubercart order status
+ * @param string $order_status
+ *   An Ubercart order status
+ *
  * @return int
- *    A CiviCRM order status
+ *   A CiviCRM order status
  */
-function _uc_civicrm_map_contribution_status($orderStatus) {
+function _uc_civicrm_map_contribution_status($order_status) {
   // NOTE: There may be a more "correct" way to do this.
   $map = array(
     "completed"        => 1,
@@ -783,18 +798,20 @@ function _uc_civicrm_map_contribution_status($orderStatus) {
     "in_checkout"      => 5,
   );
 
-  if (array_key_exists($orderStatus, $map)) {
-    $id = $map[$orderStatus];
+  if (array_key_exists($order_status, $map)) {
+    $id = $map[$order_status];
   }
   else {
-    $id = 1; // Oh no.
-    watchdog('uc_civicrm', 'There is no status that maps to ' . $orderStatus . ', marking as "Complete"', array(), WATCHDOG_WARNING);
+    // Oh no.
+    $id = 1;
+    watchdog('uc_civicrm', 'There is no status that maps to %order_status, marking as "Complete"', array('%order_status' => $order_status), WATCHDOG_WARNING);
   }
 
   return $id;
 }
+
 /**
- * Create activity in Civi
+ * Create activity in Civi.
  */
 function uc_civicrm_create_activity($order, $arguments) {
   if (!civicrm_initialize(TRUE)) {
@@ -803,31 +820,31 @@ function uc_civicrm_create_activity($order, $arguments) {
   if (user_is_logged_in() == FALSE) {
     return;
   }
-  try{
+  try {
     civicrm_api3('activity', 'create', $arguments);
   }
   catch (CiviCRM_API3_Exception $e) {
-    drupal_set_message(t('activity creation failed ') . $e->getmessage());
-    watchdog('uc_civicrm', 'activity creation failed ' . $e->getmessage());
+    drupal_set_message(t('Activity creation failed: %message', array('%message' => $e->getmessage())));
+    watchdog('uc_civicrm', 'activity creation failed: %message', array('%message' => $e->getmessage()));
   }
 }
 
 /**
- * Create activity in Civi
+ * Form builder to create a CiviCRM Activity.
  */
 function uc_civicrm_create_activity_form($form_state, $settings = array()) {
   if (!civicrm_initialize(TRUE)) {
     return;
   }
   $form = array();
-  $activityTypes = civicrm_api3('constant', 'get', array('name' => 'activityType'));
-  asort($activityTypes['values']);
-  $activityStatuses = civicrm_api3('constant', 'get', array('name' => 'activityStatus'));
-  asort($activityStatuses['values']);
+  $activity_types = civicrm_api3('constant', 'get', array('name' => 'activityType'));
+  asort($activity_types['values']);
+  $activity_statuses = civicrm_api3('constant', 'get', array('name' => 'activityStatus'));
+  asort($activity_statuses['values']);
   $form['activity_type_id'] = array(
     '#type' => 'select',
     '#title' => t('Activity Type'),
-    '#options' => $activityTypes['values'],
+    '#options' => $activity_types['values'],
     '#required' => TRUE,
     '#description' => t('Type of Activity to Create'),
     '#default_value' => isset($settings['activity_type_id']) ? $settings['activity_type_id'] : NULL,
@@ -835,27 +852,27 @@ function uc_civicrm_create_activity_form($form_state, $settings = array()) {
   $form['activity_status_id'] = array(
     '#type' => 'select',
     '#title' => t('Activity Status'),
-    '#options' => $activityStatuses['values'],
+    '#options' => $activity_statuses['values'],
     '#required' => TRUE,
     '#description' => t('Status of Activity'),
-    '#default_value' => isset($settings['activity_status_id']) ? $settings['activity_status_id'] : array_search(ts('Scheduled'), $activityStatuses['values']),
+    '#default_value' => isset($settings['activity_status_id']) ? $settings['activity_status_id'] : array_search(ts('Scheduled'), $activity_statuses['values']),
   );
   $form['assignee_contact_id'] = array(
     '#type' => 'textfield',
     '#required' => TRUE,
     '#title' => t('Enter the contact you wish the activity to be assigned to'),
     '#description' => t('The activity will be assigned to the person with this contact id'),
-    '#default_value' => isset($settings['assignee_contact_id']) ? $settings['assignee_contact_id'] : NULl,
+    '#default_value' => isset($settings['assignee_contact_id']) ? $settings['assignee_contact_id'] : NULL,
   );
 
   return $form;
 }
 
 /**
- * Syncronizes the status of an order from Ubercart to CiviCRM
+ * Synchronizes order status from Ubercart to CiviCRM.
  *
- * @param $order
- *    Order
+ * @param object $order
+ *   The order object.
  */
 function uc_civicrm_syncronize_status($order) {
   if (!module_exists('civicrm')) {
@@ -863,25 +880,25 @@ function uc_civicrm_syncronize_status($order) {
   }
   civicrm_initialize();
 
-  $searchParams = array('invoice_id' => $order->order_id ."_uc", 'return.contact_id' => 1);
+  $search_params = array('invoice_id' => $order->order_id . "_uc", 'return.contact_id' => 1);
+  $result = civicrm_api3('contributon', 'get', $search_params);
 
-  $result = civicrm_api3('contributon', 'get', $searchParams);
-
-  if (civicrm_error ($result)) {
-    watchdog('uc_civicrm', 'uc_civicrm_syncronize_status() returned: '. $result['error_message'], array(), WATCHDOG_ERROR);
+  // @TODO Doesn't civicrm_api3 throw exceptions instead of returning
+  // CiviCRM errors?
+  if (civicrm_error($result)) {
+    watchdog('uc_civicrm', 'uc_civicrm_syncronize_status() returned: %message', array('%message' => $result['error_message']), WATCHDOG_ERROR);
   }
   else {
     $contribution = array_shift($result);
-    $setParams = array(
+    $params = array(
       'id'                     => $contribution['contribution_id'],
       'contact_id'             => $contribution['contact_id'],
       'contribution_status_id' => _uc_civicrm_map_contribution_status($order->order_status),
     );
 
-    $result = civicrm_api3('contribution', 'create', $setParams);
+    $result = civicrm_api3('contribution', 'create', $params);
   }
 }
-
 
 /**
  * Create string to insert for purchase activity details.
@@ -900,6 +917,9 @@ function _uc_civicrm_create_detail_string($order) {
   return $str;
 }
 
+/**
+ * Please document this function.
+ */
 function _uc_civicrm_customer_orders_count($uid) {
   $query = "
     SELECT count(*) c
@@ -915,11 +935,14 @@ function _uc_civicrm_customer_orders_count($uid) {
   }
 }
 /**
- * Displays a list of orders made by a customer. Originally from uc_order.module but added here when it was removed from that module.
+ * Return a list of orders made by a customer.
+ *
+ * Originally from uc_order.module but added here when it was removed
+ * from that module.
  *
  * @see http://drupal.org/node/1567946
  *
- * @param $uid
+ * @param int $uid
  *   The user id of the customer.
  */
 function _uc_civicrm_customer_orders($uid) {
@@ -932,16 +955,21 @@ function _uc_civicrm_customer_orders($uid) {
     LIMIT 50
   ";
   $result = db_query($query, array($uid));
-  $html = "<table><tr>
-    <td>" . t('View') . "</td>
-    <td>" . t('Order ID') . "</td>
-    <td>" . t('Date') . "</td>
-    <td>" . t('Billing name') . "</td>
-    <td>" . t('Shipping name') . "</td>
-    <td>" . t('Total') . "</td>
-    <tr>";
 
-  $totals = array('orders' => 0, 'items' => 0, 'total' => 0);
+  $header = array(
+    t('View'),
+    t('Order ID'),
+    t('Date'),
+    t('Billing Name'),
+    t('Shipping Name'),
+    t('Total'),
+  );
+
+  $totals = array(
+    'orders' => 0,
+    'items' => 0,
+    'total' => 0,
+  );
 
   while ($order = db_fetch_object($result)) {
     $icons = l(uc_store_get_icon('file:order_view'), 'admin/store/orders/' . $order->order_id, array(
@@ -955,26 +983,25 @@ function _uc_civicrm_customer_orders($uid) {
     $bname = drupal_ucfirst($order->billing_first_name) . ' ' . drupal_ucfirst($order->billing_last_name);
     $sname = drupal_ucfirst($order->delivery_first_name) . ' ' . drupal_ucfirst($order->delivery_last_name);
 
-
     $totals['orders'] += 1;
-
     $totals['total'] += $order->order_total;
 
-    $html .= "<tr>
-      <td>" . $icons . "</td>
-      <td>" .  $order->order_id . "</td>
-      <td>" .  format_date($order->created, 'uc_store') . "</td>
-      <td>" .  check_plain($bname) . "</td>
-      <td>" .  check_plain($sname) . "</td>
-      <td>" .  $order->order_total . "</td><tr>";
+    $rows[] = array(
+      $icons,
+      $order->order_id,
+      format_date($order->created, 'uc_store'),
+      check_plain($bname),
+      check_plain($sname),
+      $order->order_total,
+    );
   }
-  return $html;
+  return theme('table', $header, $rows);
 }
 
 /**
- * Implementation of hook_form_alter().
+ * Implements hook_form_alter().
  *
- * @todo is this just one form? we can put it in the fn name can't we
+ * @TODO Is this just one form? We can put it in the fn name can't we.
  */
 function uc_civicrm_form_alter(&$form, $form_state, $form_id) {
   $forms = array('uc_cart_checkout_form');
@@ -987,37 +1014,37 @@ function uc_civicrm_form_alter(&$form, $form_state, $form_id) {
   */
   global $user;
   try {
-    $prefillAddresses = $prefillPhones = $primaryAddress = array();
-    $contactID = civicrm_api3('uf_match', 'getvalue', array('return' => 'contact_id', 'uf_id' => $user->uid));
-    $contact = civicrm_api3('contact', 'getsingle', array('id' => $contactID, 'return' => 'first_name, last_name'));
-    $addresses = civicrm_api3('address', 'get', array('contact_id' => $contactID));
-    $phones = civicrm_api3('phone', 'get', array('contact_id' => $contactID));
+    $prefill_addresses = $prefill_phones = $primary_address = array();
+    $contact_id = civicrm_api3('uf_match', 'getvalue', array('return' => 'contact_id', 'uf_id' => $user->uid));
+    $contact = civicrm_api3('contact', 'getsingle', array('id' => $contact_id, 'return' => 'first_name, last_name'));
+    $addresses = civicrm_api3('address', 'get', array('contact_id' => $contact_id));
+    $phones = civicrm_api3('phone', 'get', array('contact_id' => $contact_id));
     $locations = _uc_civicrm_get_locations();
-    $addressTypes = array('billing', 'delivery');
-    foreach ($addressTypes as $addressType) {
-      foreach ($addresses ['values'] as $address) {
-        $locationName = array_search($address ['location_type_id'], $locations);
-        if ($locationName == 'civicrm-' . $addressType || (empty($prefillAddresses[$addressType]) && $locationName == 'uc-' . $addressType)) {
-          $prefillAddresses[$addressType] = $address;
+    $address_types = array('billing', 'delivery');
+    foreach ($address_types as $address_type) {
+      foreach ($addresses['values'] as $address) {
+        $location_name = array_search($address['location_type_id'], $locations);
+        if ($location_name == 'civicrm-' . $address_type || (empty($prefill_addresses[$address_type]) && $location_name == 'uc-' . $address_type)) {
+          $prefill_addresses[$address_type] = $address;
         }
-        if ($address ['is_primary']) {
-          $primaryAddress = $address;
+        if ($address['is_primary']) {
+          $primary_address = $address;
         }
       }
       foreach ($phones['values'] as $phone) {
-        $locationName = array_search($phone ['location_type_id'], $locations);
-        if ($locationName == 'civicrm-' . $addressType || (empty($prefillPhones[$addressType]) && $locationName == 'uc-' . $addressType)) {
-          $prefillPhones[$addressType] = $phone;
+        $location_name = array_search($phone['location_type_id'], $locations);
+        if ($location_name == 'civicrm-' . $address_type || (empty($prefill_phones[$address_type]) && $location_name == 'uc-' . $address_type)) {
+          $prefill_phones[$address_type] = $phone;
         }
         if ($phone['is_primary']) {
-          $primaryPhone = $phone;
+          $primary_phone = $phone;
         }
       }
-      if (empty($prefillAddresses[$addressType]) && ! empty($primaryAddress)) {
-        $prefillAddresses[$addressType] = $primaryAddress;
+      if (empty($prefill_addresses[$address_type]) && !empty($primary_address)) {
+        $prefill_addresses[$address_type] = $primary_address;
       }
-      if (empty($prefillPhones[$addressType]) && ! empty($primaryPhone)) {
-        $prefillPhones[$addressType] = $primaryPhone;
+      if (empty($prefill_phones[$address_type]) && !empty($primary_phone)) {
+        $prefill_phones[$address_type] = $primary_phone;
       }
     }
   }
@@ -1026,76 +1053,85 @@ function uc_civicrm_form_alter(&$form, $form_state, $form_id) {
     return;
   }
 
+  // In the case of Ubercart's checkout form auto-populate the
+  // delivery and billing pane information with the appropriate
+  // addresses.
+  foreach ($address_types as $address_type) {
+    $pane = &$form['panes'][$address_type];
+    $pane[$address_type . '_first_name']['#default_value'] = CRM_Utils_Array::value('first_name', $contact);
+    $pane[$address_type . '_last_name']['#default_value'] = CRM_Utils_Array::value('last_name', $contact);
+    if (!empty($prefill_addresses[$address_type])) {
+      $prefill = $prefill_addresses[$address_type];
+      $pane[$address_type . '_company']['#default_value'] = CRM_Utils_Array::value('name', $prefill);
+      $pane[$address_type . '_street1']['#default_value'] = CRM_Utils_Array::value('street_address', $prefill);
+      $pane[$address_type . '_street2']['#default_value'] = CRM_Utils_Array::value('supplemental_address_1', $prefill);
+      $pane[$address_type . '_city']['#default_value'] = CRM_Utils_Array::value('city', $prefill);
+      $pane[$address_type . '_postal_code']['#default_value'] = CRM_Utils_Array::value('postal_code', $prefill);
 
-   //In the case of Ubercart's checkout form auto-populate the delivery and billing pane information with the appropriate addresses.
-
-  foreach ($addressTypes as $addressType) {
-    $pane = &$form['panes'][$addressType];
-    $pane[$addressType . '_first_name']['#default_value'] = CRM_Utils_Array::value('first_name', $contact);
-    $pane[$addressType . '_last_name']['#default_value'] = CRM_Utils_Array::value('last_name', $contact);
-    if (!empty($prefillAddresses[$addressType])) {
-      $prefill = $prefillAddresses[$addressType];
-      $pane[$addressType . '_company']['#default_value'] = CRM_Utils_Array::value('name', $prefill);
-      $pane[$addressType . '_street1']['#default_value'] = CRM_Utils_Array::value('street_address', $prefill);
-      $pane[$addressType . '_street2']['#default_value'] = CRM_Utils_Array::value('supplemental_address_1', $prefill);
-      $pane[$addressType . '_city']['#default_value'] = CRM_Utils_Array::value('city', $prefill);
-      $pane[$addressType . '_postal_code']['#default_value'] = CRM_Utils_Array::value('postal_code', $prefill);
-
-
-      // set state
-      $stateName = _uc_civicrm_get_option_name('stateProvince', CRM_Utils_Array::value('state_province_id', $prefill));
+      // Set state.
+      $state_name = _uc_civicrm_get_option_name('stateProvince', CRM_Utils_Array::value('state_province_id', $prefill));
       $country_name = _uc_civicrm_get_option_name('country', CRM_Utils_Array::value('country_id', $prefill));
       $country_id = _uc_civicrm_get_country_id($country_name);
-      $pane[$addressType . '_zone'] = uc_zone_select(uc_get_field_name('zone'), NULL, NULL, $country_id, 'name', uc_address_field_required('zone'));
-      if (count($pane[$addressType . '_zone']['#options']) == 1) {
-        $pane[$addressType . '_zone']['#required'] = FALSE;
+      $pane[$address_type . '_zone'] = uc_zone_select(uc_get_field_name('zone'), NULL, NULL, $country_id, 'name', uc_address_field_required('zone'));
+      if (count($pane[$address_type . '_zone']['#options']) == 1) {
+        $pane[$address_type . '_zone']['#required'] = FALSE;
       }
-      $stateOption = array_search($stateName, array_map('strtolower', $pane[$addressType . '_zone']['#options']));
-      $pane[$addressType . '_zone']['#default_value'] = $stateOption;
+      $state_option = array_search($state_name, array_map('strtolower', $pane[$address_type . '_zone']['#options']));
+      $pane[$address_type . '_zone']['#default_value'] = $state_option;
 
       // Set country.
-      $countryOption = array_search($country_name, array_map('strtolower', $pane[$addressType . '_country']['#options']));
-      $pane[$addressType . '_country']['#default_value'] = $countryOption;
+      $country_option = array_search($country_name, array_map('strtolower', $pane[$address_type . '_country']['#options']));
+      $pane[$address_type . '_country']['#default_value'] = $country_option;
 
       // Trigger shipping calculation via javascript.
-      if ($addressType == 'delivery') {
-        add_autocalc_shipping_js();
+      if ($address_type == 'delivery') {
+        _uc_civicrm_add_autocalc_shipping_js();
       }
     }
-    if (!empty($prefillPhones[$addressType])) {
-      $prefill = $prefillPhones[$addressType];
-      $pane[$addressType . '_phone']['#default_value'] = CRM_Utils_Array::value('phone', $prefill);
+    if (!empty($prefill_phones[$address_type])) {
+      $prefill = $prefill_phones[$address_type];
+      $pane[$address_type . '_phone']['#default_value'] = CRM_Utils_Array::value('phone', $prefill);
     }
   }
 }
 
 /**
- * Get available locations (pref set types by variable in future instead of hard-coding types
- * UC Fields are stored to civicrm fields are prefilled from
+ * Get available locations.
  *
- * We don't provide a form for this yet but you can configure using
+ * @TODO Pref set types by variable in future instead of hard-coding
+ * types.
+ *
+ * UC Fields are stored to civicrm fields are prefilled from.
+ *
+ * We don't provide a form for this yet but you can configure using:
+ *
  *  drush php-eval "variable_set('uc_civicrm_locations', array('civicrm-delivery' => 1));"
  *
- * (note your location will be merged into the pre-set ones so you can set between 1 & 4)
+ * (note your location will be merged into the pre-set ones so you can
+ * set between 1 & 4)
+ *
  * @return array
+ *   Locations.
  */
 function _uc_civicrm_get_locations() {
-  $locationTypes = civicrm_api3('phone', 'getoptions', array('field' => 'location_type_id'));
-  $locationTypes = $locationTypes['values'];
+  $location_types = civicrm_api3('phone', 'getoptions', array('field' => 'location_type_id'));
+  $location_types = $location_types['values'];
 
   $locations = array(
-    'civicrm-billing' => variable_get('uc_civicrm_locations_civicrm_billing', array_search('Billing', $locationTypes)),
-    'uc-billing' => variable_get('uc_civicrm_locations_uc_billing', array_search('Ubercart_Billing', $locationTypes) ? array_search('Ubercart_Billing', $locationTypes) : array_search('Billing', $locationTypes)),
-    'civicrm-delivery' => variable_get('uc_civicrm_locations_civicrm_delivery', array_search('Postal', $locationTypes)),
-    'uc-delivery' => variable_get('uc_civicrm_locations_uc_delivery', array_search('Ubercart_Shipping', $locationTypes) ? array_search('Ubercart_Shipping', $locationTypes) : array_search('Postal', $locationTypes)),
+    'civicrm-billing' => variable_get('uc_civicrm_locations_civicrm_billing', array_search('Billing', $location_types)),
+    'uc-billing' => variable_get('uc_civicrm_locations_uc_billing', array_search('Ubercart_Billing', $location_types) ? array_search('Ubercart_Billing', $location_types) : array_search('Billing', $location_types)),
+    'civicrm-delivery' => variable_get('uc_civicrm_locations_civicrm_delivery', array_search('Postal', $location_types)),
+    'uc-delivery' => variable_get('uc_civicrm_locations_uc_delivery', array_search('Ubercart_Shipping', $location_types) ? array_search('Ubercart_Shipping', $location_types) : array_search('Postal', $location_types)),
   );
   return $locations;
 }
 
 /**
  * Return Ubercart id for a country.
+ *
  * @param string $country_name
  *   Country name to lookup, e.g. Australia.
+ *
  * @return string
  *   Ubercart id used in select options.
  */
@@ -1106,36 +1142,43 @@ function _uc_civicrm_get_country_id($country_name) {
 }
 
 /**
- * Get lower case state name from id
- * in 4.4 & above getoptions is better than constant get - but not supported in 4.2, 4.3
- * @param $id stateprovince id
+ * Get option name from id.
+ *
+ * @TODO Why is $fn a parameter here? The only calls to it don't set
+ * that value. Remove.
+ *
+ * @param string $id
+ *   stateprovince id.
+ *
  * @return string
+ *   Name of state.
  */
 function _uc_civicrm_get_option_name($option, $id, $fn = 'strtolower') {
   $names = civicrm_api3('constant', 'get', array('name' => $option));
   return $fn($names['values'][$id]);
 }
 
-  /**
-   * wrapper for getOptions / pseudoconstant to get contact type options
-   */
-  function _uc_get_location_type_options() {
-    if (method_exists('CRM_Core_PseudoConstant', 'locationType')) {
-      return CRM_Core_PseudoConstant::locationType();
-    }
-    else{
-      $result = civicrm_api3('address', 'getoptions', array('field' => 'location_type_id'));
-      return $result['values'];
-    }
-  }
 /**
- * Cal shipping for on prefill
- * https://drupal.org/node/1664858
- * @param unknown $form
- * @param unknown $form_state
- * @param unknown $form_id
+ * Wrapper for getOptions to get contact type options.
  */
-function add_autocalc_shipping_js() {
+function _uc_get_location_type_options() {
+  if (method_exists('CRM_Core_PseudoConstant', 'locationType')) {
+    return CRM_Core_PseudoConstant::locationType();
+  }
+  else {
+    $result = civicrm_api3('address', 'getoptions', array('field' => 'location_type_id'));
+    return $result['values'];
+  }
+}
+
+/**
+ * Cal shipping for on prefill.
+ *
+ * https://drupal.org/node/1664858
+ *
+ * @TODO What does "cal shipping for on prefill" mean?
+ */
+function _uc_civicrm_add_autocalc_shipping_js() {
   drupal_add_js('$(document).ready(function() {
       $("input[id*=quote-button]").click().hide();
       $("#edit-panes-delivery-delivery-zone-wrapper").change(function() {
