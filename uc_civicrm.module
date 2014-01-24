@@ -9,9 +9,6 @@
  * Implements hook_help().
  */
 function uc_civicrm_help($path = 'admin/help#uc_civicrm') {
-  if (!module_exists('civicrm')) {
-    return;
-  }
   switch ($path) {
     case 'admin/help#uc_civicrm':
       return t("This module integrates Ubercart with CiviCRM. When a customer buys something from the store, the name and address information they provide is added to CiviCRM. Existing contact records will be updated. The new or updated contact is added to a group, activity history record of type 'Purchase' is added to the contact's history and the 'Purchases' tab on the contact's dashboard is populated with a link to their order history.");
@@ -22,9 +19,6 @@ function uc_civicrm_help($path = 'admin/help#uc_civicrm') {
  * Implements hook_civicrm_tabs().
  */
 function uc_civicrm_civicrm_tabs(&$tabs, $cid) {
-  if (!module_exists('civicrm')) {
-    return;
-  }
   $uid = CRM_Core_BAO_UFMatch::getUFId($cid);
   if (empty($uid)) {
     return;
@@ -52,10 +46,6 @@ function uc_civicrm_civicrm_tabs(&$tabs, $cid) {
  * Implements hook_menu().
  */
 function uc_civicrm_menu() {
-  if (!module_exists('civicrm')) {
-    return;
-  }
-
   $items = array();
   $items['admin/store/civicrm/customer/orders/%'] = array(
     'title'            => 'CiviCRM',
@@ -84,7 +74,7 @@ function uc_civicrm_menu() {
  *   Drupal UID for the customer
  */
 function uc_civicrm_contact_transaction($uid, $snippet = TRUE) {
-  if (!module_exists('civicrm') || is_null($uid) || !civicrm_initialize()) {
+  if (is_null($uid) || !civicrm_initialize()) {
     return;
   }
 
@@ -101,10 +91,6 @@ function uc_civicrm_contact_transaction($uid, $snippet = TRUE) {
  * Admin form configuration.
  */
 function uc_civicrm_admin() {
-  if (!module_exists('civicrm') || !civicrm_initialize()) {
-    return;
-  }
-
   $groups = civicrm_api3('group', 'get', array());
 
   $options = array();
@@ -200,10 +186,6 @@ function uc_civicrm_admin() {
  * Tell Ubercart to let us know when an order is complete.
  */
 function uc_civicrm_ca_predicate() {
-  if (!module_exists('civicrm')) {
-    return;
-  }
-
   $predicates['uc_civicrm_contact_on_order'] = array(
     '#title'   => t('Copy to CiviCRM upon order submission'),
     '#trigger' => 'uc_checkout_complete',
@@ -240,10 +222,6 @@ function uc_civicrm_ca_predicate() {
  * Implements Ubercart conditional action hook_ca_action().
  */
 function uc_civicrm_ca_action() {
-  if (!module_exists('civicrm')) {
-    return;
-  }
-
   $order_arg = array(
     '#entity' => 'uc_order',
     '#title'  => t('Order'),
@@ -315,9 +293,6 @@ function uc_civicrm_action_update_contact($order) {
 function uc_civicrm_action_order_civicrm($order, $is_new = TRUE) {
   global $user;
 
-  if (!module_exists('civicrm')) {
-    return;
-  }
   if (!civicrm_initialize()) {
     return;
   }
@@ -408,9 +383,6 @@ function _uc_civicrm_add_to_groups($cid) {
  *   FALSE: error
  */
 function _uc_civicrm_get_cid($order) {
-  if (!module_exists('civicrm')) {
-    return;
-  }
   global $user;
   if ($order->uid != 0) {
     $match = CRM_Core_BAO_UFMatch::synchronizeUFMatch($user, $order->uid, $order->primary_email, 'Drupal', FALSE, 'Individual');
@@ -875,9 +847,6 @@ function uc_civicrm_create_activity_form($form_state, $settings = array()) {
  *   The order object.
  */
 function uc_civicrm_syncronize_status($order) {
-  if (!module_exists('civicrm')) {
-    return;
-  }
   civicrm_initialize();
 
   $search_params = array('invoice_id' => $order->order_id . "_uc", 'return.contact_id' => 1);
