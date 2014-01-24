@@ -386,7 +386,7 @@ function _uc_civicrm_add_to_groups($cid) {
 function _uc_civicrm_get_cid($order) {
   global $user;
   if ($order->uid != 0) {
-    $match = CRM_Core_BAO_UFMatch::synchronizeUFMatch($user, $order->uid, $order->primary_email, 'Drupal', FALSE, 'Individual');
+    $match = CRM_Core_BAO_UFMatch::synchronizeUFMatch($user, $order->uid, $order->primary_email, 'Drupal6', FALSE, 'Individual');
     if (!is_object($match)) {
       return FALSE;
     }
