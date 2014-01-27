@@ -67,7 +67,7 @@ function uc_civicrm_menu() {
     'type'             => MENU_CALLBACK,
   );
 
-  $items['admin/store/settings/uc_civicrm_menu'] = array(
+  $items['admin/store/settings/uc_civicrm'] = array(
     'title' => 'Ubercart/CiviCRM',
     'description' => 'Configuration options for Ubercart/CiviCRM integration.',
     'page callback' => 'drupal_get_form',
