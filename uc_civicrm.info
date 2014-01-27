@@ -4,4 +4,4 @@ package = "Ubercart - extra"
 dependencies[] = "civicrm"
 dependencies[] = "uc_order"
 core = "7.x"
-
+configure = admin/store/settings/uc_civicrm
